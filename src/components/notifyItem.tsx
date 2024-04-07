@@ -46,13 +46,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 80,
     width: 336,
+    paddingLeft: 8,
     marginBottom: 16,
     justifyContent: 'space-between',
     alignItems: 'center'
   },
   notifyTime: {
     lineHeight: 56,
-    fontSize: 48
+    fontSize: 44
   },
   notifyAlarm: {
     lineHeight: 24,

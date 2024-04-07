@@ -1,10 +1,8 @@
-import React, { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 
 import HabitMissionTextInput from '../../components/habitMissionTextInput'
 import HabitMissionDetail from '../../components/habitMissionDetail'
 import NotifyItem from '../../components/notifyItem'
-
 import Header from '../../components/header'
 
 const AddHabit = (): JSX.Element => {
