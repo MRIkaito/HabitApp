@@ -1,27 +1,27 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 
 const NotifyItem = (): JSX.Element => {
   return (
     <View style={styles.notifySection}>
-    {/* 通知ヘッダ・通知追加 */}
-    <View style={styles.notifyDescriptionHeader}>
-      <Text style={styles.notifyDescription}>通知</Text>
-      <Text>＋</Text>
-    </View>
+      {/* 通知ヘッダ・通知追加 */}
+      <View style={styles.notifyDescriptionHeader}>
+        <Text style={styles.notifyDescription}>通知</Text>
+        <TouchableOpacity>
+          <Text>＋</Text>
+        </TouchableOpacity>
+      </View>
 
-    {/* 通知アイテム */}
-    <View>
-      <View style={styles.notifyItem}>
+      {/* 通知アイテム */}
+      <TouchableOpacity style={styles.notifyItem}>
         <View>
           <Text style={styles.notifyTime}>10:15</Text>
           <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
         </View>
-        <View>
+        <TouchableOpacity>
           <Text style={styles.notifyDelete}></Text>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </View>
-  </View>
   )
 }
 
@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
   },
   notifyDelete: {
     borderWidth: 1, /* 位置をわかりやすくしているだけ．アイコン導入後に消去予定 */
-    height: 48,
-    width: 48,
+    height: 32,
+    width: 32,
     marginRight: 16
   }
 })

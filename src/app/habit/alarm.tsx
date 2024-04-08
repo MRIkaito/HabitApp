@@ -4,14 +4,14 @@ import Header from '../../components/header'
 const Alarm = (): JSX.Element => {
   return (
     <View style={styles.container}>
-      <Header />
+      <Header status ={false} />
 
       <View style={styles.alarmSection}>
         <Text>08:00</Text>
       </View>
 
       <View style={styles.repeatSection}>
-        <Text>繰り返し</Text>
+        <Text style={{ fontSize: 24, lineHeight: 24 }}>くり返し</Text>
         <View style = {styles.weekRepeat}>
           <TouchableOpacity>
             <View style={styles.dayRepeat}>

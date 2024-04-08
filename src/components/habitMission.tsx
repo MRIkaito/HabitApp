@@ -1,9 +1,15 @@
 import { Text, View, StyleSheet } from 'react-native'
 
-const HabitMission = (): JSX.Element => {
+interface Props {
+  children: string
+}
+
+const HabitMission = (props: Props): JSX.Element => {
+  const children = props.children
+
   return (
     <View style={styles.habitMissionLayout}>
-      <Text style={styles.habitMission}>毎日腹筋10回！</Text>
+      <Text style={styles.habitMission}>{children}</Text>
     </View>
   )
 }

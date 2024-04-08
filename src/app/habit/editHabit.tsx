@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native'
-import Header from '../../components/header'
 
+import Header from '../../components/header'
 import HabitMission from '../../components/habitMission'
 import HabitMissionDetail from '../../components/habitMissionDetail'
 import NotifyItem from '../../components/notifyItem'
@@ -9,11 +9,11 @@ import HabitWeekLog from '../../components/habitWeekLog'
 const EditHabit = (): JSX.Element => {
   return (
     <View style = {styles.container}>
-      <Header />
+      <Header status ={false} />
 
       {/* 習慣化目標 */}
       <View style={styles.habitLog}>
-        <HabitMission />
+        <HabitMission>ジョギング</HabitMission>
         <HabitWeekLog />
         <HabitWeekLog />
         <HabitWeekLog />

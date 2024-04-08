@@ -2,10 +2,16 @@ import { View, StyleSheet } from 'react-native'
 import WeeklyCheckButtons from './weeklyCheckButtons'
 import HabitMission from './habitMission'
 
-const HabitItem = (): JSX.Element => {
+interface Props {
+  children: string
+}
+
+const HabitItem = (props: Props): JSX.Element => {
+  const children = props.children
+
   return (
     <View style={styles.habitItem}>
-      <HabitMission />
+      <HabitMission>{children}</HabitMission>
 
       <WeeklyCheckButtons />
     </View>

@@ -5,10 +5,10 @@ import HabitItem from '../../components/habitItem'
 const Home = (): JSX.Element => {
   return (
     <View style={styles.container}>
-      <Header />
-      <HabitItem />
-      <HabitItem />
-      <HabitItem />
+      <Header status ={true} />
+      <HabitItem>腹筋！</HabitItem>
+      <HabitItem>スクワット！</HabitItem>
+      <HabitItem>腕立て伏せ！</HabitItem>
     </View>
   )
 }

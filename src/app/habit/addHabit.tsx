@@ -9,7 +9,7 @@ const AddHabit = (): JSX.Element => {
   return (
   // 画面全体
   <View style = {styles.container}>
-    <Header />
+      <Header status ={false} />
 
     <HabitMissionTextInput />
 

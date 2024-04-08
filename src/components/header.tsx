@@ -1,14 +1,26 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 
-const Header = (): JSX.Element => {
+interface Props {
+  status: boolean
+}
+
+const Header = (props: Props): JSX.Element => {
+  const status = props.status
+
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.delete}>
-        <Text>□</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.add}>
-        <Text>＋</Text>
-      </TouchableOpacity>
+      {status
+        ? <>
+          <TouchableOpacity style={styles.delete}>
+            <Text>□</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.add}>
+            <Text>＋</Text>
+          </TouchableOpacity>
+        </>
+        : <></>
+      }
+
     </View>
   )
 }

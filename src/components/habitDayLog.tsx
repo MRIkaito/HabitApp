@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 
 const HabitDayLog = (): JSX.Element => {
   return (
@@ -6,9 +6,9 @@ const HabitDayLog = (): JSX.Element => {
       <View style = {styles.day}>
         <Text>1</Text>
       </View>
-      <View style = {styles.daylog}>
+      <TouchableOpacity style = {styles.daylog}>
         <Text>◯</Text>
-      </View>
+      </TouchableOpacity>
     </View>
   )
 }
