@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 
+import Icon from './icon'
+
 const NotifyItem = (): JSX.Element => {
   return (
     <View style={styles.notifySection}>
       {/* 通知ヘッダ・通知追加 */}
       <View style={styles.notifyDescriptionHeader}>
         <Text style={styles.notifyDescription}>通知</Text>
-        <TouchableOpacity>
-          <Text>＋</Text>
+        <TouchableOpacity style={styles.circleButton}>
+          <Text style={styles.circleButtonLabel}>＋</Text>
         </TouchableOpacity>
       </View>
 
@@ -17,8 +19,8 @@ const NotifyItem = (): JSX.Element => {
           <Text style={styles.notifyTime}>10:15</Text>
           <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
         </View>
-        <TouchableOpacity>
-          <Text style={styles.notifyDelete}></Text>
+        <TouchableOpacity style={{ marginRight: 16 }}>
+          <Icon name='DeleteNotify' color='#D9D9D9' />
         </TouchableOpacity>
       </TouchableOpacity>
     </View>
@@ -59,11 +61,20 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontSize: 20
   },
-  notifyDelete: {
-    borderWidth: 1, /* 位置をわかりやすくしているだけ．アイコン導入後に消去予定 */
-    height: 32,
+  circleButton: {
     width: 32,
-    marginRight: 16
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderColor: '#0085ff',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  circleButtonLabel: {
+    color: '#0085ff',
+    fontSize: 24,
+    fontWeight: '700'
   }
 })
 

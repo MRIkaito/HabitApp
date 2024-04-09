@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, TouchableOpacity } from 'react-native'
+import Icon from './icon'
 
 interface Props {
   status: boolean
@@ -12,10 +13,10 @@ const Header = (props: Props): JSX.Element => {
       {status
         ? <>
           <TouchableOpacity style={styles.delete}>
-            <Text>□</Text>
+            <Icon name="Delete" color="#D9D9D9" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.add}>
-            <Text>＋</Text>
+            <Icon name="Add" color="#000000"/>
           </TouchableOpacity>
         </>
         : <></>
