@@ -1,4 +1,6 @@
-import { View, StyleSheet } from 'react-native'
+import { StyleSheet, TouchableOpacity } from 'react-native'
+import { Link } from 'expo-router'
+
 import WeeklyCheckButtons from './weeklyCheckButtons'
 import HabitMission from './habitMission'
 
@@ -10,11 +12,12 @@ const HabitItem = (props: Props): JSX.Element => {
   const children = props.children
 
   return (
-    <View style={styles.habitItem}>
-      <HabitMission>{children}</HabitMission>
-
-      <WeeklyCheckButtons />
-    </View>
+    <Link href='./editHabit' asChild>
+      <TouchableOpacity style={styles.habitItem}>
+        <HabitMission>{children}</HabitMission>
+        <WeeklyCheckButtons />
+      </TouchableOpacity>
+    </Link>
   )
 }
 

@@ -1,10 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import Header from '../../components/header'
 
 const Alarm = (): JSX.Element => {
   return (
     <View style={styles.container}>
-      <Header status ={false} />
 
       <View style={styles.alarmSection}>
         <Text>08:00</Text>

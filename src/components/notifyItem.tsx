@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Link } from 'expo-router'
 
 import Icon from './icon'
 
@@ -14,15 +15,17 @@ const NotifyItem = (): JSX.Element => {
       </View>
 
       {/* 通知アイテム */}
-      <TouchableOpacity style={styles.notifyItem}>
-        <View>
-          <Text style={styles.notifyTime}>10:15</Text>
-          <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
-        </View>
-        <TouchableOpacity style={{ marginRight: 16 }}>
-          <Icon name='DeleteNotify' color='#D9D9D9' />
+      <Link href='/habit/alarm' asChild>
+        <TouchableOpacity style={styles.notifyItem}>
+          <View>
+            <Text style={styles.notifyTime}>10:15</Text>
+            <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
+          </View>
+          <TouchableOpacity style={{ marginRight: 16 }}>
+            <Icon name='DeleteNotify' color='#D9D9D9' />
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </Link>
     </View>
   )
 }
