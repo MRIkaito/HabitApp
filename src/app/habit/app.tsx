@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { Text, View, Button, Platform } from 'react-native'
-import * as Device from 'expo-device'
+import { useEffect } from 'react'
+import { StyleSheet, View, Button } from 'react-native'
 import * as Notifications from 'expo-notifications'
-
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -12,56 +10,27 @@ Notifications.setNotificationHandler({
   })
 })
 
-
-export default function App (): JSX.Element {
-  const [expoPushToken, setExpoPushToken] = useState('')
-  const [notification, setNotification] = useState(false)
-  const notificationListener = useRef()
-  const responseListener = useRef()
-
+const App = (): JSX.Element => {
   useEffect(() => {
-    registerForPushNotificationsAsync().then(token => setExpoPushToken(token))
-
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification)
-      console.log('test')
-    })
-
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response)
-    })
-
-    return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current)
-      Notifications.removeNotificationSubscription(responseListener.current)
-    }
-  }, [])
+    requestPermissionsAsync()
+      .then(() => {})
+      .catch(() => {})
+  })
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around' }}>
-      <Text>Your expo push token: {expoPushToken}</Text>
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Title: {notification && notification.request.content.title} </Text>
-        <Text>Body: {notification && notification.request.content.body}</Text>
-        <Text>Data: {notification && JSON.stringify(notification.request.content.data)}</Text>
-      </View>
-      <View style={{ backgroundColor: 'red' }}>
-        <Button
-          title="Press to schedule a notification"
-          onPress={async () => { await schedulePushNotification() }}
-        />
-      </View>
+    <View style={styles.container}>
+      <Button
+        title='3秒後にプッシュ通知する'
+        onPress={ scheduleNotificationAsync }
+      />
     </View>
   )
 }
 
-
-async function schedulePushNotification (): Promise<void> {
+const scheduleNotificationAsync = async (): Promise<void> => {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "You've got mail!p 📬",
-      body: 'Here is the notification body',
-      data: { data: 'goes here' }
+      body: 'test'
     },
     trigger: {
       seconds: 3
@@ -69,37 +38,21 @@ async function schedulePushNotification (): Promise<void> {
   })
 }
 
+const requestPermissionsAsync = async (): Promise<void> => {
+  const { granted } = await Notifications.getPermissionsAsync()
+  if (granted) { return }
 
-async function registerForPushNotificationsAsync (): Promise<string | undefined> {
-  let token
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C'
-    })
-  }
-
-  if (Device.isDevice as boolean) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
-    }
-    if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!')
-      return
-    }
-    // Learn more about projectId:
-    // https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
-    token = (await Notifications.getExpoPushTokenAsync({ projectId: 'your-project-id' })).data
-    console.log(token)
-  } else {
-    alert('Must use physical device for Push Notifications')
-  }
-
-  return token
+  await Notifications.requestPermissionsAsync()
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column'
+  }
+})
+
+export default App
