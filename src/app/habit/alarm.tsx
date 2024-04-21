@@ -1,6 +1,20 @@
+import { router, useNavigation } from 'expo-router'
+import { useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import Save from '../../components/Save'
+
+const handlePress = (): void => {
+  router.back()
+}
 
 const Alarm = (): JSX.Element => {
+  const navigation = useNavigation()
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => { return <Save handlePress={handlePress}/> }
+    })
+  }, [])
+
   return (
     <View style={styles.container}>
 

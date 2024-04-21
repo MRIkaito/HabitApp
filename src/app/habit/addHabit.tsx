@@ -1,20 +1,28 @@
 import { View, StyleSheet } from 'react-native'
+import { router, useNavigation } from 'expo-router'
+import { useEffect } from 'react'
+import HabitMissionTextInput from '../../components/HabitMissionTextInput'
+import HabitMissionDetail from '../../components/HabitMissionDetail'
+import NotifyItem from '../../components/NotifyItem'
+import Save from '../../components/Save'
 
-import HabitMissionTextInput from '../../components/habitMissionTextInput'
-import HabitMissionDetail from '../../components/habitMissionDetail'
-import NotifyItem from '../../components/notifyItem'
-import Header from '../../components/header'
+const handlePress = (): void => {
+  router.back()
+}
 
 const AddHabit = (): JSX.Element => {
+  const navigation = useNavigation()
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => { return <Save handlePress={handlePress}/> }
+    })
+  }, [])
+
   return (
   // 画面全体
   <View style = {styles.container}>
-      <Header status ={false} />
-
     <HabitMissionTextInput />
-
     <HabitMissionDetail />
-
     <NotifyItem />
   </View>
   )

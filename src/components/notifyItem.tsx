@@ -1,7 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 
-import Icon from './icon'
+import Icon from './Icon'
+
+const handlePress = (): void => {
+  router.push('./alarm')
+}
 
 const NotifyItem = (): JSX.Element => {
   return (
@@ -9,7 +13,7 @@ const NotifyItem = (): JSX.Element => {
       {/* 通知ヘッダ・通知追加 */}
       <View style={styles.notifyDescriptionHeader}>
         <Text style={styles.notifyDescription}>通知</Text>
-        <TouchableOpacity style={styles.circleButton}>
+        <TouchableOpacity style={styles.circleButton} onPress={handlePress}>
           <Text style={styles.circleButtonLabel}>＋</Text>
         </TouchableOpacity>
       </View>

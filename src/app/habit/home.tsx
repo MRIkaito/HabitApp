@@ -1,9 +1,9 @@
 import { View, StyleSheet } from 'react-native'
 import { router, useNavigation } from 'expo-router'
 import { useEffect } from 'react'
-import HabitItem from '../../components/habitItem'
-import Add from '../../components/add'
-import Delete from '../../components/delete'
+import HabitItem from '../../components/HabitItem'
+import Add from '../../components/Add'
+import Delete from '../../components/Delete'
 
 const handlePress = (): void => {
   router.push('./addHabit')

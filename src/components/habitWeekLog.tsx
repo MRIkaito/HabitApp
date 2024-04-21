@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native'
 
-import HabitDayLog from './habitDayLog'
+import HabitDayLog from './HabitDayLog'
 
 const HabitWeekLog = (): JSX.Element => {
   return (

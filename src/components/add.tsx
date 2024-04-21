@@ -1,5 +1,5 @@
 import { StyleSheet, TouchableOpacity } from 'react-native'
-import Icon from './icon'
+import Icon from './Icon'
 
 interface Props {
   handlePress: () => void

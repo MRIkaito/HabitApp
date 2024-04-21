@@ -1,8 +1,8 @@
 import { StyleSheet, TouchableOpacity } from 'react-native'
 import { Link } from 'expo-router'
 
-import WeeklyCheckButtons from './weeklyCheckButtons'
-import HabitMission from './habitMission'
+import WeeklyCheckButtons from './WeeklyCheckButtons'
+import HabitMission from './HabitMission'
 
 interface Props {
   children: string
