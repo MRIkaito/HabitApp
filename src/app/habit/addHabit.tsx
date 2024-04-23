@@ -1,13 +1,24 @@
 import { View, StyleSheet } from 'react-native'
 import { router, useNavigation } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import HabitMissionTextInput from '../../components/HabitMissionTextInput'
 import HabitMissionDetail from '../../components/HabitMissionDetail'
 import NotifyItem from '../../components/NotifyItem'
 import Save from '../../components/Save'
+import { collection, addDoc } from 'firebase/firestore'
+import { db } from '../../../src/config'
 
 const handlePress = (): void => {
-  router.back()
+  addDoc(collection(db, 'habits'), {
+    hatitMission: 'test'
+  })
+    .then((docRef) => {
+      console.log('success', docRef.id)
+      router.back()
+    })
+    .catch((error) => {
+      console.log(error)
+    })
 }
 
 const AddHabit = (): JSX.Element => {
