@@ -66,6 +66,7 @@ const Home = (): JSX.Element => {
               />
             </View>
             <WeeklyCheckButtons />
+
             </TouchableOpacity>
           </Link>
           </>
