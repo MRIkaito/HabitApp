@@ -1,9 +1,8 @@
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native'
 import { router, useNavigation, Link } from 'expo-router'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
 import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
-
 import Add from '../../components/Add'
 import Delete from '../../components/Delete'
 import { db } from '../../config'
