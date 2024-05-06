@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native'
-import DayCheckButton from './dayCheckButton'
+import DayCheckButton from './DayCheckButton'
 
 const WeeklyCheckButtons = (): JSX.Element => {
   return (

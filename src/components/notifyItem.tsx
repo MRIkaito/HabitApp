@@ -1,6 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Link, router } from 'expo-router'
 
-import Icon from './icon'
+import Icon from './Icon'
+
+const handlePress = (): void => {
+  router.push('./alarm')
+}
 
 const NotifyItem = (): JSX.Element => {
   return (
@@ -8,21 +13,23 @@ const NotifyItem = (): JSX.Element => {
       {/* 通知ヘッダ・通知追加 */}
       <View style={styles.notifyDescriptionHeader}>
         <Text style={styles.notifyDescription}>通知</Text>
-        <TouchableOpacity style={styles.circleButton}>
+        <TouchableOpacity style={styles.circleButton} onPress={handlePress}>
           <Text style={styles.circleButtonLabel}>＋</Text>
         </TouchableOpacity>
       </View>
 
       {/* 通知アイテム */}
-      <TouchableOpacity style={styles.notifyItem}>
-        <View>
-          <Text style={styles.notifyTime}>10:15</Text>
-          <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
-        </View>
-        <TouchableOpacity style={{ marginRight: 16 }}>
-          <Icon name='DeleteNotify' color='#D9D9D9' />
+      <Link href='/habit/alarm' asChild>
+        <TouchableOpacity style={styles.notifyItem}>
+          <View>
+            <Text style={styles.notifyTime}>10:15</Text>
+            <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
+          </View>
+          <TouchableOpacity style={{ marginRight: 16 }}>
+            <Icon name='DeleteNotify' color='#D9D9D9' />
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </Link>
     </View>
   )
 }

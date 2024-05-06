@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TextInput } from 'react-native'
 const HabitMissionDetail = (): JSX.Element => {
   return (
     <View style={styles.habitMissionDetailSection}>
-    <Text style={styles.habitMissionDetailDescription}>詳細</Text>
-    <TextInput
-      editable = { true }
-      placeholder = "例)仕事から帰ってきたらすぐに走りに行く！"
-      multiline = { true }
-      numberOfLines = { 4 }
-      style = {styles.habitMissionDetail}
-    />
-  </View>
+      <Text style={styles.habitMissionDetailDescription}>詳細</Text>
+      <TextInput
+        editable = { true }
+        placeholder = "例)仕事から帰ってきたらすぐに走りに行く！"
+        multiline = { true }
+        numberOfLines = { 4 }
+        style = {styles.habitMissionDetail}
+      />
+    </View>
   )
 }
 
