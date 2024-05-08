@@ -1,7 +1,28 @@
 import { router, useNavigation } from 'expo-router'
-import { useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef
+} from 'react'
+import {
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  UIManager,
+  View,
+  useWindowDimensions,
+  Text,
+  TouchableOpacity
+} from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { TimerPicker } from 'react-native-timer-picker'
 import Save from '../../components/Save'
+
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true)
+}
 
 const handlePress = (): void => {
   router.back()
@@ -9,17 +30,57 @@ const handlePress = (): void => {
 
 const Alarm = (): JSX.Element => {
   const navigation = useNavigation()
+  const { width: windowWidth } = useWindowDimensions()
+  const scrollViewRef = useRef(null)
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => { return <Save handlePress={handlePress}/> }
     })
   }, [])
 
-  return (
-    <View style={styles.container}>
+  const onMomentumScrollEnd = useCallback(
+    (event) => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    }, [windowWidth]
+  )
 
-      <View style={styles.alarmSection}>
-        <Text>08:00</Text>
+  const renderExample = useMemo(() => {
+    return (
+      <View style={[styles.container, styles.pageContainer, { width: windowWidth }]}>
+        <TimerPicker
+          padWithNItems={2}
+          LinearGradient={LinearGradient}
+          styles={{
+            theme: 'light',
+            backgroundColor: '#E0F6FF',
+            pickerItem: {
+              fontSize: 28
+            },
+            pickerLabel: {
+              fontSize: 26,
+              marginTop: 0
+            },
+            pickerContainer: {
+              marginRight: 6
+            }
+          }}
+        />
+      </View>
+    )
+  }, [windowWidth])
+
+  return (
+    <View style={styles.wholeScreen}>
+
+      <View style={styles.repeatTimeDecisionSection}>
+       <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          onMomentumScrollEnd={onMomentumScrollEnd}>
+          {renderExample}
+        </ScrollView>
       </View>
 
       <View style={styles.repeatSection}>
@@ -74,7 +135,7 @@ const Alarm = (): JSX.Element => {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wholeScreen: {
     flex: 1,
     backgroundColor: '#E0F6FF'
   },
@@ -104,6 +165,17 @@ const styles = StyleSheet.create({
   dayCharacter: {
     fontSize: 23,
     lineHeight: 23
+  },
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%'
+  },
+  pageContainer: {
+    backgroundColor: '#E0F6FF'
+  },
+  repeatTimeDecisionSection: {
+    backgroundColor: '#E0F6FF'
   }
 })
 
