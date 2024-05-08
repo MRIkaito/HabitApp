@@ -49,7 +49,11 @@ const Alarm = (): JSX.Element => {
     return (
       <View style={[styles.container, styles.pageContainer, { width: windowWidth }]}>
         <TimerPicker
+          onDurationChange={(timer) => { (console.log(timer)) }}
+          hideSeconds={true}
           padWithNItems={2}
+          hourLabel = "時"
+          minuteLabel = "分"
           LinearGradient={LinearGradient}
           styles={{
             theme: 'light',
