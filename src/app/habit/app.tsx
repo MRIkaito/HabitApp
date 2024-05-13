@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { StyleSheet, View, Button } from 'react-native'
+import { View, Button } from 'react-native'
 import * as Notifications from 'expo-notifications'
 
 Notifications.setNotificationHandler({
@@ -9,33 +9,30 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false
   })
 })
+const weekdayScheduleNotificationAsync = async (select: boolean, select2: boolean): Promise<void> => {
+  if (select) {
+    const trigger = new Date(Date.now() + 5000)
 
-const App = (): JSX.Element => {
-  useEffect(() => {
-    requestPermissionsAsync()
-      .then(() => {})
-      .catch(() => {})
-  })
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        body: 'test5000'
+      },
+      trigger
+    })
+  }
 
-  return (
-    <View style={styles.container}>
-      <Button
-        title='3秒後にプッシュ通知する'
-        onPress={ scheduleNotificationAsync }
-      />
-    </View>
-  )
-}
+  if (select2) {
+    const trigger2 = new Date(Date.now() + 2500)
+    // trigger.setMinutes(0)
+    // trigger.setSeconds(0)
 
-const scheduleNotificationAsync = async (): Promise<void> => {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      body: 'test'
-    },
-    trigger: {
-      seconds: 3
-    }
-  })
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        body: 'test2500'
+      },
+      trigger: trigger2
+    })
+  }
 }
 
 const requestPermissionsAsync = async (): Promise<void> => {
@@ -45,14 +42,21 @@ const requestPermissionsAsync = async (): Promise<void> => {
   await Notifications.requestPermissionsAsync()
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'column'
-  }
-})
+const App = (): JSX.Element => {
+  useEffect(() => {
+    requestPermissionsAsync()
+      .then(() => {})
+      .catch(() => {})
+  })
+
+  return (
+    <View>
+      <Button
+        title='61秒後にプッシュ通知する'
+        onPress={ () => { weekdayScheduleNotificationAsync(true, true) } }
+      />
+    </View>
+  )
+}
 
 export default App
