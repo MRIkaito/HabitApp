@@ -47,29 +47,27 @@ const Home = (): JSX.Element => {
     <View style={styles.container}>
       { habits.map((habit) => {
         return (
-          <>
-          <Link
-            href={{
-              pathname: './editHabit',
-              params: { id: habit.id }
-            }}
-            asChild
-          >
-            <TouchableOpacity style={styles.habitItem}>
-            {/* <HabitMission>{habit.mission}</HabitMission> */}
-            <View style={styles.habitMissionLayout}>
-              <TextInput
-                style={styles.habitMission}
-                key={habit.id}
-                editable={false}
-                value={habit.mission}
-              />
-            </View>
-            <WeeklyCheckButtons />
-
-            </TouchableOpacity>
-          </Link>
-          </>
+          <View key={habit.id}>
+            <Link
+              href={{
+                pathname: './editHabit',
+                params: { id: habit.id }
+              }}
+              asChild
+            >
+              <TouchableOpacity style={styles.habitItem}>
+                <View style={styles.habitMissionLayout}>
+                  <TextInput
+                    style={styles.habitMission}
+                    key={habit.id}
+                    editable={false}
+                    value={habit.mission}
+                  />
+                </View>
+                <WeeklyCheckButtons />
+              </TouchableOpacity>
+            </Link>
+          </View>
         )
       })}
     </View>

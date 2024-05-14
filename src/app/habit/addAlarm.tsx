@@ -45,30 +45,18 @@ if (Platform.OS === 'android') {
 
 const handlePress = (repeatTimer, repeatWeek, id): void => {
   const habitsDocRef = doc(db, 'habits', id)
-  setDoc(habitsDocRef, {
+
+  addDoc(collection(db, 'habits', id), {
     repeatTimer,
     repeatWeek,
-    updatedAt:Timestamp.fromDate(new Date())
+    updatedAt: Timestamp.fromDate(new Date())
   })
     .then(() => {
       router.back()
     })
     .catch(() => {
-      Alert.alert('更新に失敗しました！')
+      Alert.alert('保存できませんでした')
     })
-
-
-  // addDoc(collection(habitsDocRef, 'repeats'), {
-  //   repeatTimer,
-  //   repeatWeek,
-  //   updatedAt: Timestamp.fromDate(new Date())
-  // })
-  //   .then(() => {
-  //     router.back()
-  //   })
-  //   .catch((error) => {
-  //     console.log(error)
-  //   })
 }
 
 const onPress = (repeatWeek: boolean[], i: number, setRepeatWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {

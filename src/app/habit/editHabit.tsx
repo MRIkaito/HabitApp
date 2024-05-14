@@ -6,7 +6,6 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
 import NotifyItem from '../../components/NotifyItem'
 import HabitWeekLog from '../../components/HabitWeekLog'
 import Save from '../../components/Save'
-import { type Habit } from '../../../types/habit'
 import { db } from '../../config'
 
 const handlePress = (id: string, habitMission: string, habitMissionDetail: string): void => {
