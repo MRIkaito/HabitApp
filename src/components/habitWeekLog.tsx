@@ -1,5 +1,4 @@
 import { View, StyleSheet } from 'react-native'
-
 import HabitDayLog from './HabitDayLog'
 
 const HabitWeekLog = (): JSX.Element => {
@@ -18,7 +17,9 @@ const HabitWeekLog = (): JSX.Element => {
 
 const styles = StyleSheet.create({
   habitWeekLog: {
-    flexDirection: 'row'
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 })
 

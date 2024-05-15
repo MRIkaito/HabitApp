@@ -4,7 +4,7 @@ import Icon from './Icon'
 const Delete = (): JSX.Element => {
   return (
     <TouchableOpacity style={styles.delete}>
-      <Icon name="Delete" color="#D9D9D9" />
+      <Icon iconName="Delete" iconColor="#D9D9D9" />
     </TouchableOpacity>
   )
 }

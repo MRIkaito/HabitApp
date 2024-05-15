@@ -1,54 +1,26 @@
-import {
-  router,
-  useNavigation
-} from 'expo-router'
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
-import {
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  UIManager,
-  View,
-  useWindowDimensions,
-  Text,
-  TouchableOpacity,
-  Alert
-} from 'react-native'
-import {
-  LinearGradient
-} from 'expo-linear-gradient'
-import {
-  TimerPicker
-} from 'react-native-timer-picker'
-import {
-  collection,
-  addDoc,
-  Timestamp,
-  doc,
-  setDoc
-} from 'firebase/firestore'
-import {
-  db
-} from '../../../src/config'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert } from 'react-native'
+import { TimerPicker } from 'react-native-timer-picker'
+import { router, useNavigation } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
+import { Timestamp, doc, getDoc, setDoc } from 'firebase/firestore'
 import Save from '../../components/Save'
+import { db } from '../../../src/config'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
-const handlePress = (repeatTimer, repeatWeek, id): void => {
-  const habitsDocRef = doc(db, 'habits', id)
-  setDoc(habitsDocRef, {
-    repeatTimer,
-    repeatWeek,
-    updatedAt:Timestamp.fromDate(new Date())
+// 日曜日から土曜日までを列挙型でわかりやすくする．
+enum Day { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
+
+// Firestoreに保存するイベントハンドラ
+const handleSave = (alarmTime, repeatWeeks, habitItemId, habitItemRepeatTimeId): void => {
+  const refHabitsRepeats = doc(db, 'habits', habitItemId, 'repeats', habitItemRepeatTimeId)
+  setDoc(refHabitsRepeats, {
+    alarmTime,
+    repeatWeeks,
+    updatedAt: Timestamp.fromDate(new Date())
   })
     .then(() => {
       router.back()
@@ -56,55 +28,57 @@ const handlePress = (repeatTimer, repeatWeek, id): void => {
     .catch(() => {
       Alert.alert('更新に失敗しました！')
     })
-
-
-  // addDoc(collection(habitsDocRef, 'repeats'), {
-  //   repeatTimer,
-  //   repeatWeek,
-  //   updatedAt: Timestamp.fromDate(new Date())
-  // })
-  //   .then(() => {
-  //     router.back()
-  //   })
-  //   .catch((error) => {
-  //     console.log(error)
-  //   })
 }
 
-const onPress = (repeatWeek: boolean[], i: number, setRepeatWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {
-  const updatedRepeatWeek: boolean[] = [...repeatWeek]
-  updatedRepeatWeek[i] = (!repeatWeek[i])
-  setRepeatWeek(updatedRepeatWeek)
+// 繰り返し曜日を決めるイベントハンドラ
+const onPress = (repeatWeeks: boolean[], day: Day, setRepeatWeeks: React.Dispatch<React.SetStateAction<any[]>>): void => {
+  const updatedRepeatWeek: boolean[] = [...repeatWeeks]
+  updatedRepeatWeek[day] = (!repeatWeeks[day])
+  setRepeatWeeks(updatedRepeatWeek)
 }
 
 const Alarm = (): JSX.Element => {
-  const navigation = useNavigation()
+  const headerNavigation = useNavigation()
   const { width: windowWidth } = useWindowDimensions()
-  const scrollViewRef = useRef(null)
-  const [repeatTimer, setRepeatTimer] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [repeatWeek, setRepeatWeek] = useState(new Array(7).fill(false))
+  const refScrollView = useRef(null)
+  const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [repeatWeeks, setRepeatWeeks] = useState(new Array(7).fill(false))
 
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => { return <Save handlePress={() => { handlePress(repeatTimer, repeatWeek) }}/> }
-    })
-  }, [repeatTimer, repeatWeek])
+    const refHabitsRepeats = doc(db, 'habits', id, 'repeats', id2)
+    getDoc(refHabitsRepeats)
+      .then((docHabitsRepeats) => {
+        const RemoteRepeatTimer = docHabitsRepeats?.data().repeatTimer
+        const RemoteRepeatWeek = docHabitsRepeats?.data().repeatWeek
+        setAlarmTime(RemoteRepeatTimer)
+        setRepeatWeeks(RemoteRepeatWeek)
+      })
+      .catch((error) => {
+        console.log(error)
+      })
+  }, [])
 
-  const onMomentumScrollEnd = useCallback(
-    (event) => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
-    }, [windowWidth]
-  )
+  useEffect(() => {
+    headerNavigation.setOptions({
+      headerRight: () => { return <Save onSave={() => { handleSave(alarmTime, repeatWeeks) }}/> }
+    })
+  }, [alarmTime, repeatWeeks])
+
+  const onMomentumScrollEnd = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  }, [windowWidth])
 
   const renderExample = useMemo(() => {
     return (
-      <View style={[styles.container, styles.pageContainer, { width: windowWidth }]}>
+      <View style={[styles.alarmTimeScrollViewSection, { width: windowWidth }]}>
         <TimerPicker
           onDurationChange={
             (timer) => {
-              setRepeatTimer({ hours: timer.hours, minutes: timer.minutes, seconds: 0 })
+              setAlarmTime({ hours: timer.hours, minutes: timer.minutes, seconds: 0 })
             }
           }
+          initialHours = {alarmTime.hours}
+          initialMinutes = {alarmTime.minutes}
           hideSeconds={true}
           padWithNItems={2}
           hourLabel = "時"
@@ -127,14 +101,14 @@ const Alarm = (): JSX.Element => {
         />
       </View>
     )
-  }, [windowWidth, repeatTimer])
+  }, [windowWidth, alarmTime])
 
   return (
-    <View style={styles.wholeScreen}>
+    <View style={styles.container}>
 
-      <View style={styles.repeatTimeDecisionSection}>
+      <View style={styles.alarmTimeSection}>
        <ScrollView
-          ref={scrollViewRef}
+          ref={refScrollView}
           horizontal
           pagingEnabled
           onMomentumScrollEnd={onMomentumScrollEnd}>
@@ -142,49 +116,49 @@ const Alarm = (): JSX.Element => {
         </ScrollView>
       </View>
 
-      <View style={styles.repeatSection}>
+      <View style={styles.repeatDaySection}>
         <Text style={{ fontSize: 24, lineHeight: 24 }}>くり返し</Text>
 
-        <View style = {styles.weekRepeat}>
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 0, setRepeatWeek) }}>
-            <View style={ repeatWeek[0] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={ styles.dayCharacter }>日</Text>
+        <View style = {styles.repeatDay}>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Sunday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[0] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={ styles.dayText }>日</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 1, setRepeatWeek) }}>
-            <View style={ repeatWeek[1] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>月</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Monday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[1] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>月</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 2, setRepeatWeek) }}>
-            <View style={ repeatWeek[2] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>火</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Tuesday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[2] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>火</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 3, setRepeatWeek) }}>
-            <View style={ repeatWeek[3] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>水</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Wednesday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[3] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>水</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 4, setRepeatWeek) }}>
-            <View style={ repeatWeek[4] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>木</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Thursday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[4] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>木</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 5, setRepeatWeek) }}>
-            <View style={ repeatWeek[5] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>金</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Friday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[5] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>金</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatWeek, 6, setRepeatWeek) }}>
-            <View style={ repeatWeek[6] ? styles.dayTrueRepeat : styles.dayFalseRepeat }>
-              <Text style={styles.dayCharacter}>土</Text>
+          <TouchableOpacity onPress={() => { onPress(repeatWeeks, Day.Saturday, setRepeatWeeks) }}>
+            <View style={ repeatWeeks[6] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>土</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -194,7 +168,7 @@ const Alarm = (): JSX.Element => {
 }
 
 const styles = StyleSheet.create({
-  wholeScreen: {
+  container: {
     flex: 1,
     backgroundColor: '#E0F6FF'
   },
@@ -206,42 +180,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  repeatSection: {
+  repeatDaySection: {
     paddingLeft: 27,
     paddingRight: 27
   },
-  weekRepeat: {
+  repeatDay: {
     flexDirection: 'row'
   },
-  dayTrueRepeat: {
+  onRepeatDay: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
     height: 32,
     width: 48,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexDirection: 'row'
   },
-  dayFalseRepeat: {
+  offRepeatDay: {
     backgroundColor: '#C0C0C0',
     borderWidth: 1,
     height: 32,
     width: 48,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexDirection: 'row'
   },
-  dayCharacter: {
+  dayText: {
     fontSize: 23,
     lineHeight: 23
   },
-  container: {
+  alarmTimeScrollViewSection: {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%'
   },
-  pageContainer: {
-    backgroundColor: '#E0F6FF'
-  },
-  repeatTimeDecisionSection: {
+  alarmTimeSection: {
     backgroundColor: '#E0F6FF'
   }
 })

@@ -1,12 +1,11 @@
-import { createIconSetFromIcoMoon } from '@expo/vector-icons'
 import { useFonts } from 'expo-font'
-
+import { createIconSetFromIcoMoon } from '@expo/vector-icons'
 import fontData from '../../assets/fonts/habitIcon.ttf'
 import fontSelection from '../../assets/fonts/selection.json'
 
 interface Props {
-  name: string
-  color: string
+  iconName: string
+  iconColor: string
 }
 
 const CustomIcon = createIconSetFromIcoMoon(
@@ -16,17 +15,22 @@ const CustomIcon = createIconSetFromIcoMoon(
 )
 
 const Icon = (props: Props): JSX.Element | null => {
-  const { name, color } = props
-
+  const { iconName, iconColor } = props
   const [fontLoaded] = useFonts({
     IcoMoon: fontData
   })
 
+  // 画像を読み込めなかった場合, nullをreturn
   if (!fontLoaded) {
     return null
   }
+
   return (
-    <CustomIcon name={name} size={48} color={color} />
+    <CustomIcon
+      name={iconName}
+      size={48}
+      color={iconColor}
+    />
   )
 }
 

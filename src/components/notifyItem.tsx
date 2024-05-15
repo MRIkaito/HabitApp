@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Link, router } from 'expo-router'
-
 import Icon from './Icon'
 
 const handlePress = (): void => {
@@ -26,7 +25,7 @@ const NotifyItem = (): JSX.Element => {
             <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
           </View>
           <TouchableOpacity style={{ marginRight: 16 }}>
-            <Icon name='DeleteNotify' color='#D9D9D9' />
+            <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
           </TouchableOpacity>
         </TouchableOpacity>
       </Link>

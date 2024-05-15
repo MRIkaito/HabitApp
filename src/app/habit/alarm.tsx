@@ -1,42 +1,10 @@
-import {
-  router,
-  useNavigation
-} from 'expo-router'
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
-import {
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  UIManager,
-  View,
-  useWindowDimensions,
-  Text,
-  TouchableOpacity,
-  Alert
-} from 'react-native'
-import {
-  LinearGradient
-} from 'expo-linear-gradient'
-import {
-  TimerPicker
-} from 'react-native-timer-picker'
-import {
-  collection,
-  addDoc,
-  Timestamp,
-  doc,
-  setDoc
-} from 'firebase/firestore'
-import {
-  db
-} from '../../../src/config'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert } from 'react-native'
+import { TimerPicker } from 'react-native-timer-picker'
+import { router, useNavigation } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
+import { Timestamp, doc, setDoc } from 'firebase/firestore'
+import { db } from '../../../src/config'
 import Save from '../../components/Save'
 
 if (Platform.OS === 'android') {
@@ -56,19 +24,6 @@ const handlePress = (repeatTimer, repeatWeek, id): void => {
     .catch(() => {
       Alert.alert('更新に失敗しました！')
     })
-
-
-  // addDoc(collection(habitsDocRef, 'repeats'), {
-  //   repeatTimer,
-  //   repeatWeek,
-  //   updatedAt: Timestamp.fromDate(new Date())
-  // })
-  //   .then(() => {
-  //     router.back()
-  //   })
-  //   .catch((error) => {
-  //     console.log(error)
-  //   })
 }
 
 const onPress = (repeatWeek: boolean[], i: number, setRepeatWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {
@@ -86,7 +41,7 @@ const Alarm = (): JSX.Element => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => { return <Save handlePress={() => { handlePress(repeatTimer, repeatWeek) }}/> }
+      headerRight: () => { return <Save onSave={() => { handlePress(repeatTimer, repeatWeek) }}/> }
     })
   }, [repeatTimer, repeatWeek])
 

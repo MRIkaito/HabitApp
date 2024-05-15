@@ -1,38 +1,37 @@
+import React, { useEffect, useState } from 'react'
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native'
 import { router, useNavigation, Link } from 'expo-router'
-import React, { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
-import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
 import Add from '../../components/Add'
 import Delete from '../../components/Delete'
+import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
 import { db } from '../../config'
 import { type Habit } from '../../../types/habit'
 
-const handlePress = (): void => {
+const handleSave = (): void => {
   router.push('./addHabit')
 }
 
 const Home = (): JSX.Element => {
   const [habits, setHabits] = useState<Habit[]>([])
-
-  const navigation = useNavigation()
+  const headerNavigation = useNavigation()
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => { return <Add handlePress={handlePress}/> },
+    headerNavigation.setOptions({
+      headerRight: () => { return <Add onSave={handleSave}/> },
       headerLeft: () => { return <Delete /> }
     })
   }, [])
 
   useEffect(() => {
-    const ref = collection(db, 'habits')
-    const q = query(ref, orderBy('updatedAt', 'desc'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const refHabits = collection(db, 'habits')
+    const queryHabits = query(refHabits, orderBy('updatedAt', 'desc'))
+    const unsubscribeHomeScreen = onSnapshot(queryHabits, (snapshot) => {
       const remoteHabits: Habit[] = [] // habitsに入れる前の一時的な保存
-      snapshot.forEach((doc) => {
-        console.log('habits', doc.data())
-        const { habitMission, habitMissionDetail, updatedAt } = doc.data()
+      snapshot.forEach((docHabits) => {
+        console.log('habits', docHabits.data())
+        const { habitMission, habitMissionDetail, updatedAt } = docHabits.data()
         remoteHabits.push({
-          id: doc.id,
+          id: docHabits.id,
           mission: habitMission,
           missionDetail: habitMissionDetail,
           updatedAt
@@ -40,7 +39,7 @@ const Home = (): JSX.Element => {
       })
       setHabits(remoteHabits)
     })
-    return unsubscribe
+    return unsubscribeHomeScreen
   }, [])
 
   return (
@@ -48,15 +47,9 @@ const Home = (): JSX.Element => {
       { habits.map((habit) => {
         return (
           <View key={habit.id}>
-            <Link
-              href={{
-                pathname: './editHabit',
-                params: { id: habit.id }
-              }}
-              asChild
-            >
+            <Link href={{ pathname: './editHabit', params: { id: habit.id } }} asChild>
               <TouchableOpacity style={styles.habitItem}>
-                <View style={styles.habitMissionLayout}>
+                <View style={styles.habitMissionAndhabitLog}>
                   <TextInput
                     style={styles.habitMission}
                     key={habit.id}
@@ -77,7 +70,8 @@ const Home = (): JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E0F6FF'
+    backgroundColor: '#E0F6FF',
+    alignItems: 'center'
   },
   habitItem: {
     backgroundColor: '#CCF0FF',
@@ -92,7 +86,7 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     shadowOffset: { width: 0, height: 5 }
   },
-  habitMissionLayout: {
+  habitMissionAndhabitLog: {
     justifyContent: 'center',
     height: 48,
     width: 336

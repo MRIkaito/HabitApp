@@ -1,12 +1,15 @@
-import { Text, View, TextInput, StyleSheet, Alert } from 'react-native'
-import { router, useNavigation, useLocalSearchParams } from 'expo-router'
 import { useState, useEffect } from 'react'
+import { Text, View, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native'
+import { Link, router, useNavigation, useLocalSearchParams } from 'expo-router'
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
-
-import NotifyItem from '../../components/NotifyItem'
 import HabitWeekLog from '../../components/HabitWeekLog'
+import Icon from '../../components/Icon'
 import Save from '../../components/Save'
 import { db } from '../../config'
+
+const handlePressToAddAlarmScreen = (): void => {
+  router.push('./addAlarm')
+}
 
 const handlePress = (id: string, habitMission: string, habitMissionDetail: string): void => {
   const ref = doc(db, 'habits', id)
@@ -24,17 +27,17 @@ const handlePress = (id: string, habitMission: string, habitMissionDetail: strin
 }
 
 const EditHabit = (): JSX.Element => {
-  const id = String(useLocalSearchParams().id)
   const [habitMission, setHabitMission] = useState('')
   const [habitMissionDetail, setHabitMissionDetail] = useState('')
+  const habitsItemId = String(useLocalSearchParams().id)
+  const headerNavigation = useNavigation()
 
   useEffect(() => {
-    const ref = doc(db, 'habits', id)
-    getDoc(ref)
-      .then((docRef) => {
-        const RemoteHabitMission: string = docRef?.data()?.habitMission
-        const RemoteHabitMissionDetail: string = docRef?.data()?.habitMissionDetail
-
+    const refHabitsItem = doc(db, 'habits', habitsItemId)
+    getDoc(refHabitsItem)
+      .then((refHabitsItem) => {
+        const RemoteHabitMission: string = refHabitsItem?.data()?.habitMission
+        const RemoteHabitMissionDetail: string = refHabitsItem?.data()?.habitMissionDetail
         setHabitMission(RemoteHabitMission)
         setHabitMissionDetail(RemoteHabitMissionDetail)
       })
@@ -43,18 +46,17 @@ const EditHabit = (): JSX.Element => {
       })
   }, [])
 
-  const navigation = useNavigation()
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => { return <Save handlePress={() => { handlePress(id, habitMission, habitMissionDetail) }}/> }
+    headerNavigation.setOptions({
+      headerRight: () => { return <Save onSave={() => { handlePress(habitsItemId, habitMission, habitMissionDetail) }}/> }
     })
   }, [habitMission, habitMissionDetail])
 
   return (
     <View style = {styles.container}>
       {/* 習慣化目標 */}
-      <View style={styles.habitLog}>
-        <View style={styles.habitMissionLayout}>
+      <View style={styles.habitMissionAndHabitLogSection}>
+        <View style={styles.habitMissionSection}>
           <TextInput
             style={styles.habitMission}
             editable={true}
@@ -81,8 +83,29 @@ const EditHabit = (): JSX.Element => {
       />
     </View>
 
-      {/* 通知 */}
-      <NotifyItem />
+    {/* 通知セクション */}
+    <View style={styles.alarmSection}>
+      {/* 通知ヘッダ・通知追加 */}
+      <View style={styles.alarmDescription}>
+        <Text style={styles.alarmText}>通知</Text>
+        <TouchableOpacity style={styles.addButton} onPress={handlePressToAddAlarmScreen}>
+          <Text style={styles.addButtonPlus}>＋</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 通知アイテム */}
+      <Link href='/habit/alarm' asChild>
+        <TouchableOpacity style={styles.alarmItem}>
+          <View>
+            <Text style={styles.alarmTime}>10:15</Text>
+            <Text style={styles.repeatWeek}>くり返し：(月)(金)</Text>
+          </View>
+          <TouchableOpacity style={{ marginRight: 16 }}>
+            <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Link>
+    </View>
     </View>
   )
 }
@@ -92,7 +115,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#E0F6FF'
   },
-  habitLog: {
+  habitMissionAndHabitLogSection: {
     paddingLeft: 27,
     paddingRight: 27,
     marginBottom: 8
@@ -115,7 +138,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontSize: 24
   },
-  habitMissionLayout: {
+  habitMissionSection: {
     justifyContent: 'center',
     height: 48,
     width: 336
@@ -123,6 +146,54 @@ const styles = StyleSheet.create({
   habitMission: {
     fontSize: 24,
     lineHeight: 24
+  },
+  alarmSection: {
+    paddingLeft: 24,
+    paddingRight: 24
+  },
+  alarmDescription: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  alarmText: {
+    lineHeight: 40,
+    fontSize: 24,
+    marginRight: 16
+  },
+  alarmItem: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderRadius: 10,
+    height: 80,
+    width: 336,
+    paddingLeft: 8,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  alarmTime: {
+    lineHeight: 56,
+    fontSize: 44
+  },
+  repeatWeek: {
+    lineHeight: 24,
+    fontSize: 20
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderColor: '#0085ff',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  addButtonPlus: {
+    color: '#0085ff',
+    fontSize: 24,
+    fontWeight: '700'
   }
 })
 
