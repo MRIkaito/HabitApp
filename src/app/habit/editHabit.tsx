@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Text, View, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native'
+import { Text, View, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native'
 import { Link, router, useNavigation, useLocalSearchParams } from 'expo-router'
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, Timestamp, collection, query, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore'
 import HabitWeekLog from '../../components/HabitWeekLog'
 import Icon from '../../components/Icon'
 import Save from '../../components/Save'
 import { db } from '../../config'
+import { type HabitItemAlarm } from '../../../types/habit'
 
-const handlePressToAddAlarmScreen = (): void => {
-  router.push('./addAlarm')
-}
-
-const handlePress = (id: string, habitMission: string, habitMissionDetail: string): void => {
-  const ref = doc(db, 'habits', id)
+const handleSave = (habitItemId: string, habitMission: string, habitMissionDetail: string): void => {
+  const ref = doc(db, 'habits', habitItemId)
   setDoc(ref, {
     habitMission,
     habitMissionDetail,
@@ -26,15 +23,40 @@ const handlePress = (id: string, habitMission: string, habitMissionDetail: strin
     })
 }
 
+const handleDelete = (habitItemId: string, alarmId: string): void => {
+  const refAlarmItem = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+
+  Alert.alert('削除します', 'よろしいですか？', [
+    {
+      text: 'キャンセル'
+    },
+    {
+      text: '削除する',
+      style: 'destructive',
+      onPress: () => {
+        deleteDoc(refAlarmItem)
+          .catch(() => { Alert.alert('削除に失敗しました') })
+      }
+    }
+  ])
+}
+
 const EditHabit = (): JSX.Element => {
+  const [alarmItems, setAlarmItems] = useState<HabitItemAlarm[]>([])
   const [habitMission, setHabitMission] = useState('')
   const [habitMissionDetail, setHabitMissionDetail] = useState('')
-  const habitsItemId = String(useLocalSearchParams().id)
+  const habitItemId = String(useLocalSearchParams().habitItemId)
   const headerNavigation = useNavigation()
 
   useEffect(() => {
-    const refHabitsItem = doc(db, 'habits', habitsItemId)
-    getDoc(refHabitsItem)
+    headerNavigation.setOptions({
+      headerRight: () => { return <Save onSave={() => { handleSave(habitItemId, habitMission, habitMissionDetail) }}/> }
+    })
+  }, [habitMission, habitMissionDetail])
+
+  useEffect(() => {
+    const refHabitItem = doc(db, 'habits', habitItemId)
+    getDoc(refHabitItem)
       .then((refHabitsItem) => {
         const RemoteHabitMission: string = refHabitsItem?.data()?.habitMission
         const RemoteHabitMissionDetail: string = refHabitsItem?.data()?.habitMissionDetail
@@ -47,13 +69,28 @@ const EditHabit = (): JSX.Element => {
   }, [])
 
   useEffect(() => {
-    headerNavigation.setOptions({
-      headerRight: () => { return <Save onSave={() => { handlePress(habitsItemId, habitMission, habitMissionDetail) }}/> }
+    const refAlarmItems = collection(db, `habits/${habitItemId}/alarms`)
+    const queryAlarmItems = query(refAlarmItems, orderBy('alarmTime.hours', 'desc'))
+    const unsubscribeEditHabitScreen = onSnapshot(queryAlarmItems, (snapshot) => {
+      const remoteAlarmItems: HabitItemAlarm[] = []
+
+      snapshot.forEach((docAlarmItems) => {
+        console.log('', docAlarmItems.data())
+        const { alarmTime, repeatDayOfWeek, updatedAt } = docAlarmItems.data()
+        remoteAlarmItems.push({
+          alarmId: docAlarmItems.id,
+          alarmTime: { hours: alarmTime.hours, minutes: alarmTime.minutes, seconds: alarmTime.seconds },
+          repeatDayOfWeek,
+          updatedAt
+        })
+      })
+      setAlarmItems(remoteAlarmItems)
     })
-  }, [habitMission, habitMissionDetail])
+    return unsubscribeEditHabitScreen
+  }, [])
 
   return (
-    <View style = {styles.container}>
+    <ScrollView style = {styles.container}>
       {/* 習慣化目標 */}
       <View style={styles.habitMissionAndHabitLogSection}>
         <View style={styles.habitMissionSection}>
@@ -71,42 +108,58 @@ const EditHabit = (): JSX.Element => {
       </View>
 
       <View style={styles.habitMissionDetailSection}>
-      <Text style={styles.habitMissionDetailDescription}>詳細</Text>
-      <TextInput
-        editable = { true }
-        placeholder = "例)仕事から帰ってきたらすぐに走りに行く！"
-        multiline = { true }
-        numberOfLines = { 4 }
-        style = {styles.habitMissionDetail}
-        value={habitMissionDetail}
-        onChangeText = {(habitMissionDetail) => { setHabitMissionDetail(habitMissionDetail) }}
-      />
-    </View>
-
-    {/* 通知セクション */}
-    <View style={styles.alarmSection}>
-      {/* 通知ヘッダ・通知追加 */}
-      <View style={styles.alarmDescription}>
-        <Text style={styles.alarmText}>通知</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handlePressToAddAlarmScreen}>
-          <Text style={styles.addButtonPlus}>＋</Text>
-        </TouchableOpacity>
+        <Text style={styles.habitMissionDetailDescription}>詳細</Text>
+        <TextInput
+          editable = { true }
+          placeholder = "例)仕事から帰ってきたらすぐに走りに行く！"
+          multiline = { true }
+          numberOfLines = { 4 }
+          style = {styles.habitMissionDetail}
+          value={habitMissionDetail}
+          onChangeText = {(habitMissionDetail) => { setHabitMissionDetail(habitMissionDetail) }}
+        />
       </View>
 
-      {/* 通知アイテム */}
-      <Link href='/habit/alarm' asChild>
-        <TouchableOpacity style={styles.alarmItem}>
-          <View>
-            <Text style={styles.alarmTime}>10:15</Text>
-            <Text style={styles.repeatWeek}>くり返し：(月)(金)</Text>
-          </View>
-          <TouchableOpacity style={{ marginRight: 16 }}>
-            <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Link>
-    </View>
-    </View>
+      <View style={styles.alarmSection}>
+        <View style={styles.alarmDescription}>
+          <Text style={styles.alarmText}>通知</Text>
+          <Link href={{ pathname: './addAlarm', params: { habitItemId } }}>
+            <View style={styles.addButton}>
+              <Text style={styles.addButtonPlus}>+</Text>
+            </View>
+          </Link>
+        </View>
+
+        { alarmItems.map((alarmItem) => {
+          return (
+            <View key={alarmItem.alarmId}>
+              {/* <Link href='/habit/alarm' asChild> */}
+              <TouchableOpacity style={styles.alarmItem}>
+                <View>
+                  <Text style={styles.alarmTime}>
+                    {(alarmItem.alarmTime.hours).toString()}:{(alarmItem.alarmTime.minutes).toString().padStart(2, '0')}
+                  </Text>
+                  <Text style={styles.repeatWeek}>
+                    くりかえし：
+                    {alarmItem.repeatDayOfWeek[0] && '(日)'}
+                    {alarmItem.repeatDayOfWeek[1] && '(月)'}
+                    {alarmItem.repeatDayOfWeek[2] && '(火)'}
+                    {alarmItem.repeatDayOfWeek[3] && '(水)'}
+                    {alarmItem.repeatDayOfWeek[4] && '(木)'}
+                    {alarmItem.repeatDayOfWeek[5] && '(金)'}
+                    {alarmItem.repeatDayOfWeek[6] && '(土)'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={{ marginRight: 16 }} onPress={() => { handleDelete(habitItemId, alarmItem.alarmId)}}>
+                  <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
+                </TouchableOpacity>
+              </TouchableOpacity>
+              {/* </Link> */}
+            </View>
+          )
+        })}
+      </View>
+    </ScrollView>
   )
 }
 

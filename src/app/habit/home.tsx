@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { router, useNavigation, Link } from 'expo-router'
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
+import { doc, collection, onSnapshot, query, orderBy, deleteDoc } from 'firebase/firestore'
 import Add from '../../components/Add'
-import Delete from '../../components/Delete'
+import Icon from '../../components/Icon'
 import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
 import { db } from '../../config'
 import { type Habit } from '../../../types/habit'
@@ -12,28 +12,46 @@ const handleSave = (): void => {
   router.push('./addHabit')
 }
 
+const handleDelete = (habitItemId: string): void => {
+  const refHabitItem = doc(db, 'habits', habitItemId)
+  Alert.alert('削除します', 'よろしいですか？', [
+    {
+      text: 'キャンセル'
+    },
+    {
+      text: '削除する',
+      style: 'destructive',
+      onPress: () => {
+        deleteDoc(refHabitItem)
+          .catch(() => { Alert.alert('削除に失敗しました') })
+      }
+    }
+  ])
+}
+
 const Home = (): JSX.Element => {
-  const [habits, setHabits] = useState<Habit[]>([])
+  const [habitItems, setHabits] = useState<Habit[]>([])
   const headerNavigation = useNavigation()
+
   useEffect(() => {
     headerNavigation.setOptions({
-      headerRight: () => { return <Add onSave={handleSave}/> },
-      headerLeft: () => { return <Delete /> }
+      headerRight: () => { return <Add onSave={handleSave}/> }
     })
   }, [])
 
   useEffect(() => {
     const refHabits = collection(db, 'habits')
     const queryHabits = query(refHabits, orderBy('updatedAt', 'desc'))
+
     const unsubscribeHomeScreen = onSnapshot(queryHabits, (snapshot) => {
       const remoteHabits: Habit[] = [] // habitsに入れる前の一時的な保存
       snapshot.forEach((docHabits) => {
         console.log('habits', docHabits.data())
         const { habitMission, habitMissionDetail, updatedAt } = docHabits.data()
         remoteHabits.push({
-          id: docHabits.id,
-          mission: habitMission,
-          missionDetail: habitMissionDetail,
+          habitItemId: docHabits.id,
+          habitMission,
+          habitMissionDetail,
           updatedAt
         })
       })
@@ -44,18 +62,21 @@ const Home = (): JSX.Element => {
 
   return (
     <View style={styles.container}>
-      { habits.map((habit) => {
+      { habitItems.map((habitItem) => {
         return (
-          <View key={habit.id}>
-            <Link href={{ pathname: './editHabit', params: { id: habit.id } }} asChild>
+          <View key={habitItem.habitItemId}>
+            <Link href={{ pathname: './editHabit', params: { habitItemId: habitItem.habitItemId } }} asChild>
               <TouchableOpacity style={styles.habitItem}>
                 <View style={styles.habitMissionAndhabitLog}>
                   <TextInput
                     style={styles.habitMission}
-                    key={habit.id}
+                    key={habitItem.habitItemId}
                     editable={false}
-                    value={habit.mission}
+                    value={habitItem.habitMission}
                   />
+                <TouchableOpacity style={ styles.deleteHabitItemButton } onPress={() => {handleDelete(habitItem.habitItemId)}} >
+                  <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
+                </TouchableOpacity>
                 </View>
                 <WeeklyCheckButtons />
               </TouchableOpacity>
@@ -87,13 +108,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 }
   },
   habitMissionAndhabitLog: {
-    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
     height: 48,
     width: 336
   },
   habitMission: {
     fontSize: 24,
     lineHeight: 24
+  },
+  deleteHabitItemButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0
   }
 })
 

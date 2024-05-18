@@ -6,18 +6,18 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import Save from '../../components/Save'
 import { db } from '../../../src/config'
+import type { AlarmTime } from '../../../types/habit'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
-// 日曜日から土曜日までを列挙型でわかりやすくする．
-enum Day { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
+enum dayOfWeek { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
 
-const handleSave = (alarmTime, repeatWeeks, habitItemId): void => {
-  addDoc(collection(db, 'habits', habitItemId, 'repeats'), {
+const handleSave = (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string): void => {
+  addDoc(collection(db, 'habits', habitItemId, 'alarms'), {
     alarmTime,
-    repeatWeeks,
+    repeatDayOfWeek,
     updatedAt: Timestamp.fromDate(new Date())
   })
     .then(() => {
@@ -29,25 +29,25 @@ const handleSave = (alarmTime, repeatWeeks, habitItemId): void => {
     })
 }
 
-const handlePressRepeatWeek = (repeatWeeks: boolean[], day: Day, setRepeatWeeks: React.Dispatch<React.SetStateAction<any[]>>): void => {
-  const updatedRepeatWeek: boolean[] = [...repeatWeeks]
-  updatedRepeatWeek[day] = (!repeatWeeks[day])
-  setRepeatWeeks(updatedRepeatWeek)
+const handlePressRepeatDayOfWeek = (repeatDayOfWeek: boolean[], dayOfWeek: dayOfWeek, setRepeatDayOfWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {
+  const updatedRepeatDayOfWeek: boolean[] = [...repeatDayOfWeek]
+  updatedRepeatDayOfWeek[dayOfWeek] = (!repeatDayOfWeek[dayOfWeek])
+  setRepeatDayOfWeek(updatedRepeatDayOfWeek)
 }
 
-const Alarm = (): JSX.Element => {
-  const id = String(useLocalSearchParams().id)
+const AddAlarm = (): JSX.Element => {
   const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [repeatWeeks, setRepeatWeeks] = useState(new Array(7).fill(false))
-  const headerNavigation = useNavigation()
+  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState(new Array(7).fill(false))
   const { width: windowWidth } = useWindowDimensions()
-  const scrollViewRef = useRef(null)
+  const refScrollView = useRef(null)
+  const headerNavigation = useNavigation()
+  const habitItemId = String(useLocalSearchParams().habitItemId)
 
   useEffect(() => {
     headerNavigation.setOptions({
-      headerRight: () => { return <Save onSave={() => { handleSave(alarmTime, repeatWeeks, id) }}/> }
+      headerRight: () => { return <Save onSave={() => { handleSave(alarmTime, repeatDayOfWeek, habitItemId) }}/> }
     })
-  }, [alarmTime, repeatWeeks])
+  }, [alarmTime, repeatDayOfWeek])
 
   const onMomentumScrollEnd = useCallback(
     () => {
@@ -93,7 +93,7 @@ const Alarm = (): JSX.Element => {
 
       <View style={styles.alarmTimeSection}>
        <ScrollView
-          ref={scrollViewRef}
+          ref={refScrollView}
           horizontal
           pagingEnabled
           onMomentumScrollEnd={onMomentumScrollEnd}>
@@ -105,44 +105,44 @@ const Alarm = (): JSX.Element => {
         <Text style={{ fontSize: 24, lineHeight: 24 }}>くり返し</Text>
 
         <View style = {styles.repeatDay}>
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Sunday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[0] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Sunday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[0] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={ styles.dayText }>日</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Monday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[1] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Monday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[1] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>月</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Tuesday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[2] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Tuesday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[2] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>火</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Wednesday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[3] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Wednesday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[3] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>水</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Thursday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[4] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Thursday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[4] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>木</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Friday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[5] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Friday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[5] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>金</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { handlePressRepeatWeek(repeatWeeks, Day.Saturday, setRepeatWeeks) }}>
-            <View style={ repeatWeeks[6] ? styles.onRepeatDay : styles.offRepeatDay }>
+          <TouchableOpacity onPress={() => { handlePressRepeatDayOfWeek(repeatDayOfWeek, dayOfWeek.Saturday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[6] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>土</Text>
             </View>
           </TouchableOpacity>
@@ -205,4 +205,4 @@ const styles = StyleSheet.create({
   }
 })
 
-export default Alarm
+export default AddAlarm
