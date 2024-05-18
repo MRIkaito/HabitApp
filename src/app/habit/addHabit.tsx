@@ -1,13 +1,12 @@
-import { Text, TextInput, View, StyleSheet } from 'react-native'
-import { router, useNavigation } from 'expo-router'
 import { useEffect, useState } from 'react'
-
+import { Text, TextInput, View, StyleSheet, Alert } from 'react-native'
+import { router, useNavigation } from 'expo-router'
+import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import NotifyItem from '../../components/NotifyItem'
 import Save from '../../components/Save'
-import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../../../src/config'
 
-const handlePress = (habitMission: string, habitMissionDetail: string): void => {
+const handleSave = (habitMission: string, habitMissionDetail: string): void => {
   addDoc(collection(db, 'habits'), {
     habitMission,
     habitMissionDetail,
@@ -17,6 +16,7 @@ const handlePress = (habitMission: string, habitMissionDetail: string): void => 
       router.back()
     })
     .catch((error) => {
+      Alert.alert('追加できませんでした')
       console.log(error)
     })
 }
@@ -24,10 +24,11 @@ const handlePress = (habitMission: string, habitMissionDetail: string): void => 
 const AddHabit = (): JSX.Element => {
   const [habitMission, setHabitMission] = useState('')
   const [habitMissionDetail, setHabitMissionDetail] = useState('')
-  const navigation = useNavigation()
+  const headerNavigation = useNavigation()
+
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => { return <Save handlePress= {() => { handlePress(habitMission, habitMissionDetail) }}/> }
+    headerNavigation.setOptions({
+      headerRight: () => { return <Save onSave= {() => { handleSave(habitMission, habitMissionDetail) }}/> }
     })
   }, [habitMission, habitMissionDetail])
 
@@ -36,11 +37,11 @@ const AddHabit = (): JSX.Element => {
     <View style={styles.habitMissionSection}>
       <Text style={styles.habitMissionDescription}>習慣化したいことはなんですか？</Text>
       <TextInput
+        onChangeText = {(mission) => { setHabitMission(mission) }}
+        value = { habitMission }
         placeholder=" 例)毎日15分ランニング！"
         maxLength={16}
         editable = {true}
-        value = { habitMission }
-        onChangeText = {(mission) => { setHabitMission(mission) }}
         style = {styles.habitMissionTextInput}
       />
     </View>
@@ -48,13 +49,13 @@ const AddHabit = (): JSX.Element => {
     <View style={styles.habitMissionDetailSection}>
       <Text style={styles.habitMissionDetailDescription}>詳細</Text>
       <TextInput
+        onChangeText = {(missionDetail) => { setHabitMissionDetail(missionDetail) }}
         placeholder = "例)仕事から帰ってきたらすぐに走りに行く！"
         maxLength={70}
         editable = { true }
         multiline = { true }
         numberOfLines = { 4 }
-        onChangeText = {(missionDetail) => { setHabitMissionDetail(missionDetail) }}
-        style = {styles.habitMissionDetail}
+        style = {styles.habitMissionDetailTextInput}
       />
     </View>
 
@@ -66,6 +67,7 @@ const AddHabit = (): JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
     backgroundColor: '#E0F6FF'
   },
   habitMissionSection: {
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 32
   },
-  habitMissionDetail: {
+  habitMissionDetailTextInput: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderRadius: 10,

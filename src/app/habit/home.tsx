@@ -1,74 +1,87 @@
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native'
-import { router, useNavigation, Link } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
-import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
+import { View, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import { router, useNavigation, Link } from 'expo-router'
+import { doc, collection, onSnapshot, query, orderBy, deleteDoc } from 'firebase/firestore'
 import Add from '../../components/Add'
-import Delete from '../../components/Delete'
+import Icon from '../../components/Icon'
+import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
 import { db } from '../../config'
 import { type Habit } from '../../../types/habit'
 
-const handlePress = (): void => {
+const handleSave = (): void => {
   router.push('./addHabit')
 }
 
-const Home = (): JSX.Element => {
-  const [habits, setHabits] = useState<Habit[]>([])
+const handleDelete = (habitItemId: string): void => {
+  const refHabitItem = doc(db, 'habits', habitItemId)
+  Alert.alert('削除します', 'よろしいですか？', [
+    {
+      text: 'キャンセル'
+    },
+    {
+      text: '削除する',
+      style: 'destructive',
+      onPress: () => {
+        deleteDoc(refHabitItem)
+          .catch(() => { Alert.alert('削除に失敗しました') })
+      }
+    }
+  ])
+}
 
-  const navigation = useNavigation()
+const Home = (): JSX.Element => {
+  const [habitItems, setHabits] = useState<Habit[]>([])
+  const headerNavigation = useNavigation()
+
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => { return <Add handlePress={handlePress}/> },
-      headerLeft: () => { return <Delete /> }
+    headerNavigation.setOptions({
+      headerRight: () => { return <Add onSave={handleSave}/> }
     })
   }, [])
 
   useEffect(() => {
-    const ref = collection(db, 'habits')
-    const q = query(ref, orderBy('updatedAt', 'desc'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const refHabits = collection(db, 'habits')
+    const queryHabits = query(refHabits, orderBy('updatedAt', 'desc'))
+
+    const unsubscribeHomeScreen = onSnapshot(queryHabits, (snapshot) => {
       const remoteHabits: Habit[] = [] // habitsに入れる前の一時的な保存
-      snapshot.forEach((doc) => {
-        console.log('habits', doc.data())
-        const { habitMission, habitMissionDetail, updatedAt } = doc.data()
+      snapshot.forEach((docHabits) => {
+        console.log('habits', docHabits.data())
+        const { habitMission, habitMissionDetail, updatedAt } = docHabits.data()
         remoteHabits.push({
-          id: doc.id,
-          mission: habitMission,
-          missionDetail: habitMissionDetail,
+          habitItemId: docHabits.id,
+          habitMission,
+          habitMissionDetail,
           updatedAt
         })
       })
       setHabits(remoteHabits)
     })
-    return unsubscribe
+    return unsubscribeHomeScreen
   }, [])
 
   return (
     <View style={styles.container}>
-      { habits.map((habit) => {
+      { habitItems.map((habitItem) => {
         return (
-          <>
-          <Link
-            href={{
-              pathname: './editHabit',
-              params: { id: habit.id }
-            }}
-            asChild
-          >
-            <TouchableOpacity style={styles.habitItem}>
-            {/* <HabitMission>{habit.mission}</HabitMission> */}
-            <View style={styles.habitMissionLayout}>
-              <TextInput
-                style={styles.habitMission}
-                key={habit.id}
-                editable={false}
-                value={habit.mission}
-              />
-            </View>
-            <WeeklyCheckButtons />
-            </TouchableOpacity>
-          </Link>
-          </>
+          <View key={habitItem.habitItemId}>
+            <Link href={{ pathname: './editHabit', params: { habitItemId: habitItem.habitItemId } }} asChild>
+              <TouchableOpacity style={styles.habitItem}>
+                <View style={styles.habitMissionAndhabitLog}>
+                  <TextInput
+                    style={styles.habitMission}
+                    key={habitItem.habitItemId}
+                    editable={false}
+                    value={habitItem.habitMission}
+                  />
+                <TouchableOpacity style={ styles.deleteHabitItemButton } onPress={() => {handleDelete(habitItem.habitItemId)}} >
+                  <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
+                </TouchableOpacity>
+                </View>
+                <WeeklyCheckButtons />
+              </TouchableOpacity>
+            </Link>
+          </View>
         )
       })}
     </View>
@@ -78,7 +91,8 @@ const Home = (): JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E0F6FF'
+    backgroundColor: '#E0F6FF',
+    alignItems: 'center'
   },
   habitItem: {
     backgroundColor: '#CCF0FF',
@@ -93,14 +107,20 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     shadowOffset: { width: 0, height: 5 }
   },
-  habitMissionLayout: {
-    justifyContent: 'center',
+  habitMissionAndhabitLog: {
+    alignItems: 'center',
+    flexDirection: 'row',
     height: 48,
     width: 336
   },
   habitMission: {
     fontSize: 24,
     lineHeight: 24
+  },
+  deleteHabitItemButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0
   }
 })
 
