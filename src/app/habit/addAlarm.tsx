@@ -37,7 +37,7 @@ const handlePressRepeatDayOfWeek = (repeatDayOfWeek: boolean[], dayOfWeek: dayOf
 
 const AddAlarm = (): JSX.Element => {
   const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState(new Array(7).fill(false))
+  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<boolean[]>(new Array(7).fill(false))
   const { width: windowWidth } = useWindowDimensions()
   const refScrollView = useRef(null)
   const headerNavigation = useNavigation()
