@@ -133,8 +133,9 @@ const EditHabit = (): JSX.Element => {
         { alarmItems.map((alarmItem) => {
           return (
             <View key={alarmItem.alarmId}>
-              {/* <Link href='/habit/alarm' asChild> */}
-              <TouchableOpacity style={styles.alarmItem}>
+              <Link href={{ pathname: './editAlarm', params: { habitItemId, alarmId: alarmItem.alarmId }}}>
+
+              <View style={styles.alarmItem}>
                 <View>
                   <Text style={styles.alarmTime}>
                     {(alarmItem.alarmTime.hours).toString()}:{(alarmItem.alarmTime.minutes).toString().padStart(2, '0')}
@@ -153,8 +154,9 @@ const EditHabit = (): JSX.Element => {
                 <TouchableOpacity style={{ marginRight: 16 }} onPress={() => { handleDelete(habitItemId, alarmItem.alarmId)}}>
                   <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
                 </TouchableOpacity>
-              </TouchableOpacity>
-              {/* </Link> */}
+              </View>
+
+              </Link>
             </View>
           )
         })}
