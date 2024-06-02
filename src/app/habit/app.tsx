@@ -9,30 +9,24 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false
   })
 })
-const weekdayScheduleNotificationAsync = async (select: boolean, select2: boolean): Promise<void> => {
-  if (select) {
-    const trigger = new Date(Date.now() + 5000)
 
+const weekdayScheduleNotificationAsync = async (select: boolean): Promise<void> => {
+  if (select) {
     await Notifications.scheduleNotificationAsync({
       content: {
         body: 'test5000'
       },
-      trigger
+      trigger: {
+        hour: 18,
+        minute: 55,
+        repeats: true,
+        weekday: 4
+      }
     })
   }
 
-  if (select2) {
-    const trigger2 = new Date(Date.now() + 2500)
-    // trigger.setMinutes(0)
-    // trigger.setSeconds(0)
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        body: 'test2500'
-      },
-      trigger: trigger2
-    })
-  }
+  // 通知のキャンセル処理
+  // Notifications.cancelAllScheduledNotificationsAsync()
 }
 
 const requestPermissionsAsync = async (): Promise<void> => {
@@ -53,7 +47,7 @@ const App = (): JSX.Element => {
     <View>
       <Button
         title='61秒後にプッシュ通知する'
-        onPress={ () => { weekdayScheduleNotificationAsync(true, true) } }
+        onPress={ () => { weekdayScheduleNotificationAsync(true) } }
       />
     </View>
   )

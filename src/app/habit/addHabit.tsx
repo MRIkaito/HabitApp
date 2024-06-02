@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Text, TextInput, View, StyleSheet, Alert } from 'react-native'
 import { router, useNavigation } from 'expo-router'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
-import NotifyItem from '../../components/NotifyItem'
 import Save from '../../components/Save'
 import { db } from '../../../src/config'
 
@@ -59,7 +58,29 @@ const AddHabit = (): JSX.Element => {
       />
     </View>
 
-    <NotifyItem />
+    {/* 後々リリース予定の機能 */}
+    {/* <View style={styles.notifySection}>
+      <View style={styles.notifyDescriptionHeader}>
+        <Text style={styles.notifyDescription}>通知</Text>
+        <Link href={{ pathname: './addTempAlarm', params: { habitMission, habitMissionDetail } }}>
+          <View style={styles.circleButton}>
+            <Text style={styles.circleButtonLabel}>＋</Text>
+          </View>
+        </Link>
+      </View>
+
+      <Link href='/habit/alarm' asChild>
+        <TouchableOpacity style={styles.notifyItem}>
+          <View>
+            <Text style={styles.notifyTime}>10:15</Text>
+            <Text style={styles.notifyAlarm}>くり返し：(月)(金)</Text>
+          </View>
+          <TouchableOpacity style={{ marginRight: 16 }}>
+            <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Link>
+    </View> */}
   </View>
   )
 }
@@ -97,6 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   habitMissionDetailDescription: {
+    alignItems: 'center',
     fontSize: 24,
     lineHeight: 32
   },
@@ -108,6 +130,55 @@ const styles = StyleSheet.create({
     width: 336,
     lineHeight: 24,
     fontSize: 24
+  },
+  notifySection: {
+    paddingLeft: 24,
+    paddingRight: 24
+  },
+  notifyDescriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-start'
+  },
+  notifyDescription: {
+    lineHeight: 40,
+    fontSize: 24,
+    marginRight: 16
+  },
+  notifyItem: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderRadius: 10,
+    height: 80,
+    width: 336,
+    paddingLeft: 8,
+    marginBottom: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  notifyTime: {
+    lineHeight: 56,
+    fontSize: 44
+  },
+  notifyAlarm: {
+    lineHeight: 24,
+    fontSize: 20
+  },
+  circleButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderColor: '#0085ff',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  circleButtonLabel: {
+    color: '#0085ff',
+    fontSize: 24,
+    fontWeight: '700'
   }
 })
 

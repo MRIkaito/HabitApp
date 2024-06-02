@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert } from 'react-native'
 import { TimerPicker } from 'react-native-timer-picker'
-import { router, useNavigation, useLocalSearchParams } from 'expo-router'
+import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
-import * as Notifications from 'expo-notifications'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import Save from '../../components/Save'
 import { db } from '../../../src/config'
@@ -13,141 +12,33 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false
-  })
-})
-
 enum dayOfWeek { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
 
-const weekdayScheduleNotificationAsync = async (hours: number, minutes: number, repeatDayOfWeek: boolean[], habitMission: string): Promise<Array<string | null>> => {
-  const identifier = new Array<string | null>(7).fill(null)
+const handleSave = async (habitMission: string, habitMissionDetail: string, alarmTime: AlarmTime, repeatDayOfWeek: boolean[], router): Promise<void> => {
+  const refHabitsItemId = await addDoc(collection(db, 'habits'), {
+    habitMission,
+    habitMissionDetail,
+    updatedAt: Timestamp.fromDate(new Date())
+  })
 
-  if (repeatDayOfWeek[0]) {
-    identifier[0] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 1,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[1]) {
-    identifier[1] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 2,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[2]) {
-    identifier[2] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 3,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[3]) {
-    identifier[3] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 4,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[4]) {
-    identifier[4] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 5,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[5]) {
-    identifier[5] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 6,
-        repeats: true
-      }
-    })
-  }
-
-  if (repeatDayOfWeek[6]) {
-    identifier[6] = await Notifications.scheduleNotificationAsync({
-      content: {
-        body: habitMission
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        weekday: 7,
-        repeats: true
-      }
-    })
-  }
-
-  return identifier
-}
-
-const requestPermissionsAsync = async (): Promise<void> => {
-  const { granted } = await Notifications.getPermissionsAsync()
-  if (granted) { return }
-
-  await Notifications.requestPermissionsAsync()
-}
-
-const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, habitMission: string): Promise<void> => {
-  await addDoc(collection(db, `habits/${habitItemId}/alarms`), {
+  addDoc(collection(db, `habits/${refHabitsItemId.id}/alarms`), {
     alarmTime,
     repeatDayOfWeek,
-    updatedAt: Timestamp.fromDate(new Date()),
-    alarmIdentifier: await weekdayScheduleNotificationAsync(alarmTime.hours, alarmTime.minutes, repeatDayOfWeek, habitMission)
+    updatedAt: Timestamp.fromDate(new Date())
   })
     .then(() => {
-      router.back()
+      // 編集画面に戻る
+      // ただし，editHabitに戻る
+      // また，追加したアラームを表示する
+      // 編集画面では，それまでに遷移した履歴を消去する
+      // 戻るボタン  = Home画面に戻る + それまでに遷移した編集履歴を削除する
+      router.push({
+        pathname: './editAlarm'
+      })
     })
-
-    .catch((error: string) => {
-      Alert.alert('保存できませんでした')
-      console.log(error)
+    .catch((error) => {
+      Alert.alert('アラームを保存できませんでした')
+      console.log('エラー；', error)
     })
 }
 
@@ -157,24 +48,19 @@ const handlePressRepeatDayOfWeek = (repeatDayOfWeek: boolean[], dayOfWeek: dayOf
   setRepeatDayOfWeek(updatedRepeatDayOfWeek)
 }
 
-const AddAlarm = (): JSX.Element => {
+const AddTempAlarm = (): JSX.Element => {
   const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
   const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<boolean[]>(new Array(7).fill(false))
   const { width: windowWidth } = useWindowDimensions()
   const refScrollView = useRef(null)
   const headerNavigation = useNavigation()
-  const habitItemId = String(useLocalSearchParams().habitItemId)
   const habitMission = String(useLocalSearchParams().habitMission)
-
-  useEffect(() => {
-    requestPermissionsAsync()
-      .then(() => {})
-      .catch(() => {})
-  }, [])
+  const habitMissionDetail = String(useLocalSearchParams().habitMission)
+  const router = useRouter()
 
   useEffect(() => {
     headerNavigation.setOptions({
-      headerRight: () => { return <Save onSave={() => { handleSaveAsync(alarmTime, repeatDayOfWeek, habitItemId, habitMission) }}/> }
+      headerRight: () => { return <Save onSave={() => { handleSave(habitMission, habitMissionDetail, alarmTime, repeatDayOfWeek, router) }}/> }
     })
   }, [alarmTime, repeatDayOfWeek])
 
@@ -334,4 +220,4 @@ const styles = StyleSheet.create({
   }
 })
 
-export default AddAlarm
+export default AddTempAlarm

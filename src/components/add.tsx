@@ -2,13 +2,13 @@ import { StyleSheet, TouchableOpacity } from 'react-native'
 import Icon from './Icon'
 
 interface Props {
-  onSave: () => void
+  onAdd: () => void
 }
 
 const Add = (props: Props): JSX.Element => {
-  const handleSave = props.onSave
+  const handleAdd = props.onAdd
   return (
-    <TouchableOpacity style={styles.add} onPress={handleSave}>
+    <TouchableOpacity style={styles.add} onPress={handleAdd}>
       <Icon iconName="Add" iconColor="#000000"/>
     </TouchableOpacity>
   )

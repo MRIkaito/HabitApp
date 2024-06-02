@@ -12,6 +12,7 @@ interface HabitItemAlarm {
   alarmTime: AlarmTime
   repeatDayOfWeek: boolean[]
   updatedAt: Timestamp
+  alarmIdentifier?: Array<string | null>
 }
 
 interface AlarmTime {
@@ -20,4 +21,12 @@ interface AlarmTime {
   seconds: number
 }
 
-export type { Habit, HabitItemAlarm, AlarmTime }
+type SetAlarmTime = React.Dispatch<React.SetStateAction<{
+  hours: number
+  minutes: number
+  seconds: number
+}>>
+
+type SetRepeatDayOfWeek = React.Dispatch<React.SetStateAction<boolean[]>>
+
+export type { Habit, HabitItemAlarm, AlarmTime, SetAlarmTime, SetRepeatDayOfWeek }

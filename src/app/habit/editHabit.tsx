@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Text, View, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native'
 import { Link, router, useNavigation, useLocalSearchParams } from 'expo-router'
+import * as Notifications from 'expo-notifications'
 import { doc, getDoc, setDoc, Timestamp, collection, query, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore'
 import HabitWeekLog from '../../components/HabitWeekLog'
 import Icon from '../../components/Icon'
@@ -23,8 +24,9 @@ const handleSave = (habitItemId: string, habitMission: string, habitMissionDetai
     })
 }
 
-const handleDelete = (habitItemId: string, alarmId: string): void => {
-  const refAlarmItem = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+const handleDelete = async (habitItemId: string, alarmId: string): Promise<void> => {
+  const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+  const refHabitAlarmId = await getDoc(refHabitAlarm)
 
   Alert.alert('削除します', 'よろしいですか？', [
     {
@@ -34,8 +36,18 @@ const handleDelete = (habitItemId: string, alarmId: string): void => {
       text: '削除する',
       style: 'destructive',
       onPress: () => {
-        deleteDoc(refAlarmItem)
+        deleteDoc(refHabitAlarm)
           .catch(() => { Alert.alert('削除に失敗しました') })
+
+        refHabitAlarmId.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
+          if (preAlarmIdentifier === null) {
+            // Do Nothing
+          } else {
+            Notifications.cancelScheduledNotificationAsync(preAlarmIdentifier)
+              .then(() => { console.log('.then実行') })
+              .catch((error) => { console.log('error:', error) })
+          }
+        })
       }
     }
   ])
@@ -70,6 +82,7 @@ const EditHabit = (): JSX.Element => {
 
   useEffect(() => {
     const refAlarmItems = collection(db, `habits/${habitItemId}/alarms`)
+    // ↓昇順にならないバグ発生．後で修正
     const queryAlarmItems = query(refAlarmItems, orderBy('alarmTime.hours', 'desc'))
     const unsubscribeEditHabitScreen = onSnapshot(queryAlarmItems, (snapshot) => {
       const remoteAlarmItems: HabitItemAlarm[] = []
@@ -123,7 +136,7 @@ const EditHabit = (): JSX.Element => {
       <View style={styles.alarmSection}>
         <View style={styles.alarmDescription}>
           <Text style={styles.alarmText}>通知</Text>
-          <Link href={{ pathname: './addAlarm', params: { habitItemId } }}>
+          <Link href={{ pathname: './addAlarm', params: { habitItemId, habitMission } }}>
             <View style={styles.addButton}>
               <Text style={styles.addButtonPlus}>+</Text>
             </View>
@@ -133,7 +146,7 @@ const EditHabit = (): JSX.Element => {
         { alarmItems.map((alarmItem) => {
           return (
             <View key={alarmItem.alarmId}>
-              <Link href={{ pathname: './editAlarm', params: { habitItemId, alarmId: alarmItem.alarmId }}}>
+              <Link href={{ pathname: './editAlarm', params: { habitItemId, habitMission, alarmId: alarmItem.alarmId }}}>
 
               <View style={styles.alarmItem}>
                 <View>
@@ -151,7 +164,13 @@ const EditHabit = (): JSX.Element => {
                     {alarmItem.repeatDayOfWeek[6] && '(土)'}
                   </Text>
                 </View>
-                <TouchableOpacity style={{ marginRight: 16 }} onPress={() => { handleDelete(habitItemId, alarmItem.alarmId)}}>
+                <TouchableOpacity
+                  style={{ marginRight: 16 }}
+                  onPress={() => {
+                    handleDelete(habitItemId, alarmItem.alarmId)
+                      .then(() => {})
+                      .catch((error) => { console.log(error) })
+                  }}>
                   <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
                 </TouchableOpacity>
               </View>
@@ -178,9 +197,11 @@ const styles = StyleSheet.create({
   habitMissionDetailSection: {
     paddingLeft: 24,
     paddingRight: 24,
-    marginBottom: 16
+    marginBottom: 16,
+    alignItems: 'center'
   },
   habitMissionDetailDescription: {
+    backgroundColor: 'red',
     fontSize: 24,
     lineHeight: 32
   },
@@ -208,7 +229,8 @@ const styles = StyleSheet.create({
   },
   alarmDescription: {
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   alarmText: {
     lineHeight: 40,
@@ -248,7 +270,9 @@ const styles = StyleSheet.create({
   addButtonPlus: {
     color: '#0085ff',
     fontSize: 24,
-    fontWeight: '700'
+    fontWeight: '700',
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 })
 
