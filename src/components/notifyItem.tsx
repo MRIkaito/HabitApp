@@ -3,7 +3,8 @@ import { Link, router } from 'expo-router'
 import Icon from './Icon'
 
 const handlePress = (): void => {
-  router.push('./alarm')
+  console.log('test')
+  router.push('../app/habit/addAlarm')
 }
 
 const NotifyItem = (): JSX.Element => {
@@ -17,7 +18,6 @@ const NotifyItem = (): JSX.Element => {
         </TouchableOpacity>
       </View>
 
-      {/* 通知アイテム */}
       <Link href='/habit/alarm' asChild>
         <TouchableOpacity style={styles.notifyItem}>
           <View>

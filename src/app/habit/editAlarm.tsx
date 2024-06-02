@@ -1,25 +1,155 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { TimerPicker } from 'react-native-timer-picker'
-import { router, useNavigation } from 'expo-router'
+import { router, useLocalSearchParams, useNavigation } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
+import * as Notifications from 'expo-notifications'
 import { Timestamp, doc, getDoc, setDoc } from 'firebase/firestore'
 import Save from '../../components/Save'
 import { db } from '../../../src/config'
+import type { AlarmTime, SetAlarmTime, SetRepeatDayOfWeek } from '../../../types/habit'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+})
+
 enum Day { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
 
-// Firestoreに保存するイベントハンドラ
-const handleSave = (alarmTime, repeatDayOfWeek, habitItemId, habitItemRepeatTimeId): void => {
-  const refHabitsAlarms = doc(db, 'habits', habitItemId, 'alarms', habitItemRepeatTimeId)
-  setDoc(refHabitsAlarms, {
+const weekdayScheduleNotificationAsync = async (hours: number, minutes: number, repeatDayOfWeek: boolean[], habitMission: string): Promise<Array<string | null>> => {
+  const identifier = new Array<string | null>(7).fill(null)
+
+  if (repeatDayOfWeek[0]) {
+    identifier[0] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 1,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[1]) {
+    identifier[1] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 2,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[2]) {
+    identifier[2] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 3,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[3]) {
+    identifier[3] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 4,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[4]) {
+    identifier[4] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 5,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[5]) {
+    identifier[5] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 6,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[6]) {
+    identifier[6] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 7,
+        repeats: true
+      }
+    })
+  }
+
+  return identifier
+}
+
+// 通知のキャンセル処理
+// Notifications.cancelAllScheduledNotificationsAsync()
+
+// Firestoreに保存する
+const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, alarmId: string, habitMission: string): Promise<void> => {
+  const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+  const refHabitAlarmIdentifier = await getDoc(refHabitAlarm)
+
+  refHabitAlarmIdentifier.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
+    if (preAlarmIdentifier === null) {
+      // Do Nothing
+    } else {
+      Notifications.cancelScheduledNotificationAsync(preAlarmIdentifier)
+        .then(() => { console.log('.then実行') })
+        .catch((error) => { console.log('error:', error) })
+    }
+  })
+
+  await setDoc(refHabitAlarm, {
     alarmTime,
     repeatDayOfWeek,
-    updatedAt: Timestamp.fromDate(new Date())
+    updatedAt: Timestamp.fromDate(new Date()),
+    alarmIdentifier: await weekdayScheduleNotificationAsync(alarmTime.hours, alarmTime.minutes, repeatDayOfWeek, habitMission)
   })
     .then(() => {
       router.back()
@@ -30,27 +160,62 @@ const handleSave = (alarmTime, repeatDayOfWeek, habitItemId, habitItemRepeatTime
 }
 
 // 繰り返し曜日を決めるイベントハンドラ
-const onPress = (repeatDayOfWeek: boolean[], day: Day, setRepeatDayOfWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {
+const handlePress = (repeatDayOfWeek: boolean[], day: Day, setRepeatDayOfWeek: SetRepeatDayOfWeek): void => {
   const updatedRepeatDayOfWeek: boolean[] = [...repeatDayOfWeek]
   updatedRepeatDayOfWeek[day] = (!repeatDayOfWeek[day])
   setRepeatDayOfWeek(updatedRepeatDayOfWeek)
 }
 
+const requestPermissionsAsync = async (): Promise<void> => {
+  const { granted } = await Notifications.getPermissionsAsync()
+  if (granted) { return }
+
+  await Notifications.requestPermissionsAsync()
+}
+
+const fetchData = async (setAlarmTime: SetAlarmTime, setRepeatDayOfWeek: SetRepeatDayOfWeek, habitItemId: string, alarmId: string): Promise<void> => {
+  await new Promise<void>((resolve, reject) => {
+    const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+
+    getDoc(refHabitAlarm)
+      .then((docHabitsAlarms) => {
+        const RemoteRepeatTimer: AlarmTime = docHabitsAlarms?.data()?.alarmTime
+        const RemoteRepeatDayOfWeek: boolean[] = docHabitsAlarms?.data()?.repeatDayOfWeek
+        setAlarmTime(RemoteRepeatTimer)
+        setRepeatDayOfWeek(RemoteRepeatDayOfWeek)
+        resolve()
+      })
+      .catch((error) => {
+        console.log(error)
+        reject(error)
+      })
+  })
+}
+
 const EditAlarm = (): JSX.Element => {
   const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState(new Array(7).fill(false))
+  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<boolean[]>(new Array(7).fill(false))
   const { width: windowWidth } = useWindowDimensions()
   const refScrollView = useRef(null)
   const headerNavigation = useNavigation()
+  const [loading, setLoading] = useState(true)
+  const habitItemId = String(useLocalSearchParams().habitItemId)
+  const alarmId = String(useLocalSearchParams().alarmId)
+  const habitMission = String(useLocalSearchParams().habitMission)
+
+  const onMomentumScrollEnd = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  }, [windowWidth])
 
   useEffect(() => {
-    const refHabitsAlarms = doc(db, 'habits', id, 'alarms', id2)
-    getDoc(refHabitsAlarms)
-      .then((docHabitsAlarms) => {
-        const RemoteRepeatTimer = docHabitsAlarms?.data().alarmTime
-        const RemoteRepeatDayOfWeek = docHabitsAlarms?.data().repeatDayOfWeek
-        setAlarmTime(RemoteRepeatTimer)
-        setRepeatDayOfWeek(RemoteRepeatDayOfWeek)
+    requestPermissionsAsync()
+      .then(() => {})
+      .catch(() => {})
+
+    fetchData(setAlarmTime, setRepeatDayOfWeek, habitItemId, alarmId)
+      .then(() => {
+        setLoading(false)
+        console.log('success!')
       })
       .catch((error) => {
         console.log(error)
@@ -59,15 +224,11 @@ const EditAlarm = (): JSX.Element => {
 
   useEffect(() => {
     headerNavigation.setOptions({
-      headerRight: () => { return <Save onSave={() => { handleSave(alarmTime, repeatDayOfWeek) }}/> }
+      headerRight: () => { return <Save onSave={() => { handleSaveAsync(alarmTime, repeatDayOfWeek, habitItemId, alarmId, habitMission) }}/> }
     })
   }, [alarmTime, repeatDayOfWeek])
 
-  const onMomentumScrollEnd = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
-  }, [windowWidth])
-
-  const renderExample = useMemo(() => {
+  const renderExample = (hour: number, minute: number): JSX.Element => {
     return (
       <View style={[styles.alarmTimeScrollViewSection, { width: windowWidth }]}>
         <TimerPicker
@@ -76,8 +237,9 @@ const EditAlarm = (): JSX.Element => {
               setAlarmTime({ hours: timer.hours, minutes: timer.minutes, seconds: 0 })
             }
           }
-          initialHours = {alarmTime.hours}
-          initialMinutes = {alarmTime.minutes}
+          aggressivelyGetLatestDuration={true}
+          initialHours = {hour}
+          initialMinutes = {minute}
           hideSeconds={true}
           padWithNItems={2}
           hourLabel = "時"
@@ -100,62 +262,120 @@ const EditAlarm = (): JSX.Element => {
         />
       </View>
     )
-  }, [windowWidth, alarmTime])
+  }
 
-  return (
-    <View style={styles.container}>
-
+  if (loading) {
+    return (
+      <View style={styles.container}>
       <View style={styles.alarmTimeSection}>
-       <ScrollView
-          ref={refScrollView}
-          horizontal
-          pagingEnabled
-          onMomentumScrollEnd={onMomentumScrollEnd}>
-          {renderExample}
-        </ScrollView>
+        <ActivityIndicator size="large" color="#0000ff"/>
       </View>
 
       <View style={styles.repeatDaySection}>
         <Text style={{ fontSize: 24, lineHeight: 24 }}>くり返し</Text>
 
         <View style = {styles.repeatDay}>
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Sunday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Sunday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[0] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={ styles.dayText }>日</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Monday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Monday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[1] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>月</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Tuesday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Tuesday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[2] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>火</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Wednesday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Wednesday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[3] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>水</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Thursday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Thursday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[4] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>木</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Friday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Friday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[5] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>金</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => { onPress(repeatDayOfWeek, Day.Saturday, setRepeatDayOfWeek) }}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Saturday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[6] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>土</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.alarmTimeSection}>
+      <ScrollView
+        ref={refScrollView}
+        horizontal
+        pagingEnabled
+        onMomentumScrollEnd={onMomentumScrollEnd}
+      >
+        {renderExample(alarmTime.hours, alarmTime.minutes)}
+      </ScrollView>
+        </View>
+
+      <View style={styles.repeatDaySection}>
+        <Text style={{ fontSize: 24, lineHeight: 24 }}>くり返し</Text>
+
+        <View style = {styles.repeatDay}>
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Sunday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[0] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={ styles.dayText }>日</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Monday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[1] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>月</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Tuesday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[2] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>火</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Wednesday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[3] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>水</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Thursday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[4] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>木</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Friday, setRepeatDayOfWeek) }}>
+            <View style={ repeatDayOfWeek[5] ? styles.onRepeatDay : styles.offRepeatDay }>
+              <Text style={styles.dayText}>金</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { handlePress(repeatDayOfWeek, Day.Saturday, setRepeatDayOfWeek) }}>
             <View style={ repeatDayOfWeek[6] ? styles.onRepeatDay : styles.offRepeatDay }>
               <Text style={styles.dayText}>土</Text>
             </View>
