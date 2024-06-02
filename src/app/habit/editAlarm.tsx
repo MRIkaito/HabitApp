@@ -1,26 +1,155 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View, useWindowDimensions, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { TimerPicker } from 'react-native-timer-picker'
 import { router, useLocalSearchParams, useNavigation } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
+import * as Notifications from 'expo-notifications'
 import { Timestamp, doc, getDoc, setDoc } from 'firebase/firestore'
 import Save from '../../components/Save'
 import { db } from '../../../src/config'
-import type { AlarmTime } from '../../../types/habit'
+import type { AlarmTime, SetAlarmTime, SetRepeatDayOfWeek } from '../../../types/habit'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+})
+
 enum Day { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday }
 
+const weekdayScheduleNotificationAsync = async (hours: number, minutes: number, repeatDayOfWeek: boolean[], habitMission: string): Promise<Array<string | null>> => {
+  const identifier = new Array<string | null>(7).fill(null)
+
+  if (repeatDayOfWeek[0]) {
+    identifier[0] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 1,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[1]) {
+    identifier[1] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 2,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[2]) {
+    identifier[2] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 3,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[3]) {
+    identifier[3] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 4,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[4]) {
+    identifier[4] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 5,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[5]) {
+    identifier[5] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 6,
+        repeats: true
+      }
+    })
+  }
+
+  if (repeatDayOfWeek[6]) {
+    identifier[6] = await Notifications.scheduleNotificationAsync({
+      content: {
+        body: habitMission
+      },
+      trigger: {
+        hour: hours,
+        minute: minutes,
+        weekday: 7,
+        repeats: true
+      }
+    })
+  }
+
+  return identifier
+}
+
+// 通知のキャンセル処理
+// Notifications.cancelAllScheduledNotificationsAsync()
+
 // Firestoreに保存する
-const handleSave = (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, alarmId: string): void => {
+const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, alarmId: string, habitMission: string): Promise<void> => {
   const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
-  setDoc(refHabitAlarm, {
+  const refHabitAlarmIdentifier = await getDoc(refHabitAlarm)
+
+  refHabitAlarmIdentifier.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
+    if (preAlarmIdentifier === null) {
+      // Do Nothing
+    } else {
+      Notifications.cancelScheduledNotificationAsync(preAlarmIdentifier)
+        .then(() => { console.log('.then実行') })
+        .catch((error) => { console.log('error:', error) })
+    }
+  })
+
+  await setDoc(refHabitAlarm, {
     alarmTime,
     repeatDayOfWeek,
-    updatedAt: Timestamp.fromDate(new Date())
+    updatedAt: Timestamp.fromDate(new Date()),
+    alarmIdentifier: await weekdayScheduleNotificationAsync(alarmTime.hours, alarmTime.minutes, repeatDayOfWeek, habitMission)
   })
     .then(() => {
       router.back()
@@ -31,36 +160,62 @@ const handleSave = (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemI
 }
 
 // 繰り返し曜日を決めるイベントハンドラ
-const handlePress = (repeatDayOfWeek: boolean[], day: Day, setRepeatDayOfWeek: React.Dispatch<React.SetStateAction<any[]>>): void => {
+const handlePress = (repeatDayOfWeek: boolean[], day: Day, setRepeatDayOfWeek: SetRepeatDayOfWeek): void => {
   const updatedRepeatDayOfWeek: boolean[] = [...repeatDayOfWeek]
   updatedRepeatDayOfWeek[day] = (!repeatDayOfWeek[day])
   setRepeatDayOfWeek(updatedRepeatDayOfWeek)
 }
 
-const EditAlarm = (): JSX.Element => {
-  const habitItemId = String(useLocalSearchParams().habitItemId)
-  const alarmId = String(useLocalSearchParams().alarmId)
-  const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<boolean[]>(new Array(7).fill(false))
-  const { width: windowWidth } = useWindowDimensions()
-  const refScrollView = useRef(null)
-  const headerNavigation = useNavigation()
+const requestPermissionsAsync = async (): Promise<void> => {
+  const { granted } = await Notifications.getPermissionsAsync()
+  if (granted) { return }
 
-  // データローディングの状態
-  const [loading, setLoading] = useState(true)
+  await Notifications.requestPermissionsAsync()
+}
 
-  const onMomentumScrollEnd = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
-  }, [windowWidth])
-
-  useEffect(() => {
+const fetchData = async (setAlarmTime: SetAlarmTime, setRepeatDayOfWeek: SetRepeatDayOfWeek, habitItemId: string, alarmId: string): Promise<void> => {
+  await new Promise<void>((resolve, reject) => {
     const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+
     getDoc(refHabitAlarm)
       .then((docHabitsAlarms) => {
         const RemoteRepeatTimer: AlarmTime = docHabitsAlarms?.data()?.alarmTime
         const RemoteRepeatDayOfWeek: boolean[] = docHabitsAlarms?.data()?.repeatDayOfWeek
         setAlarmTime(RemoteRepeatTimer)
         setRepeatDayOfWeek(RemoteRepeatDayOfWeek)
+        resolve()
+      })
+      .catch((error) => {
+        console.log(error)
+        reject(error)
+      })
+  })
+}
+
+const EditAlarm = (): JSX.Element => {
+  const [alarmTime, setAlarmTime] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<boolean[]>(new Array(7).fill(false))
+  const { width: windowWidth } = useWindowDimensions()
+  const refScrollView = useRef(null)
+  const headerNavigation = useNavigation()
+  const [loading, setLoading] = useState(true)
+  const habitItemId = String(useLocalSearchParams().habitItemId)
+  const alarmId = String(useLocalSearchParams().alarmId)
+  const habitMission = String(useLocalSearchParams().habitMission)
+
+  const onMomentumScrollEnd = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  }, [windowWidth])
+
+  useEffect(() => {
+    requestPermissionsAsync()
+      .then(() => {})
+      .catch(() => {})
+
+    fetchData(setAlarmTime, setRepeatDayOfWeek, habitItemId, alarmId)
+      .then(() => {
+        setLoading(false)
+        console.log('success!')
       })
       .catch((error) => {
         console.log(error)
@@ -69,7 +224,7 @@ const EditAlarm = (): JSX.Element => {
 
   useEffect(() => {
     headerNavigation.setOptions({
-      headerRight: () => { return <Save onSave={() => { handleSave(alarmTime, repeatDayOfWeek) }}/> }
+      headerRight: () => { return <Save onSave={() => { handleSaveAsync(alarmTime, repeatDayOfWeek, habitItemId, alarmId, habitMission) }}/> }
     })
   }, [alarmTime, repeatDayOfWeek])
 
@@ -113,14 +268,6 @@ const EditAlarm = (): JSX.Element => {
     return (
       <View style={styles.container}>
       <View style={styles.alarmTimeSection}>
-      {/* <ScrollView
-        ref={refScrollView}
-        horizontal
-        pagingEnabled
-        onMomentumScrollEnd={onMomentumScrollEnd}
-      >
-        {renderExample(alarmTime.hours, alarmTime.minutes)}
-      </ScrollView> */}
         <ActivityIndicator size="large" color="#0000ff"/>
       </View>
 
@@ -292,64 +439,3 @@ const styles = StyleSheet.create({
 })
 
 export default EditAlarm
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 以下，テスト
-// import { ActivityIndicator, Text, View } from 'react-native'
-// import { useEffect, useState } from 'react'
-
-// const fetchData = async () => {
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve("Fetched Data")
-//     }, 2000)
-//   })
-// }
-
-// const EditAlarm = (): JSX.Element => {
-//   const [data, setData] = useState<string | null>(null)
-//   const [loading, setLoading] = useState(true)
-
-//   useEffect(() => {
-//     const getData = async () => {
-//       const result = await fetchData()
-//       setData(result as string)
-//       setLoading(false)
-//     }
-
-//     getData()
-//   }, [])
-
-//   if (loading) {
-//     return (
-//       <View>
-//         {console.log('1番目?')}
-//         <ActivityIndicator size="large" color="#0000ff"/>
-//       </View>
-//     )
-//   }
-
-//   return (
-//     <View>
-//       {console.log('2番目?')}
-//       <Text>{data}</Text>
-//     </View>
-//   )
-// }
-
-
-// export default EditAlarm
