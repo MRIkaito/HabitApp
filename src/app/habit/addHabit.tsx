@@ -3,12 +3,31 @@ import { Text, TextInput, View, StyleSheet, Alert } from 'react-native'
 import { router, useNavigation } from 'expo-router'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import Save from '../../components/Save'
-import { db } from '../../../src/config'
+import { db, auth } from '../../../src/config'
 
 const handleSave = (habitMission: string, habitMissionDetail: string): void => {
-  addDoc(collection(db, 'habits'), {
+  if (auth.currentUser === null) { return } // currentUserがnullの場合は保存しない
+
+  const refToUserHabits = collection(db, `users/${auth.currentUser.uid}/habits`)
+
+  const date: Date = new Date()
+  const year: number = date.getFullYear()
+  const month: number = date.getMonth() + 1
+  const day: number = date.getDate()
+  const dayOfWeek: number = date.getDay()
+
+  addDoc(refToUserHabits, {
     habitMission,
     habitMissionDetail,
+    achievements: [
+      {
+        year,
+        month,
+        day,
+        dayOfWeek,
+        achievement: false
+      }
+    ],
     updatedAt: Timestamp.fromDate(new Date())
   })
     .then(() => {

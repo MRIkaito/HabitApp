@@ -1,23 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { View, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native'
-import { router, useNavigation, Link } from 'expo-router'
-import { doc, collection, onSnapshot, query, orderBy, deleteDoc, getDocs } from 'firebase/firestore'
+import { router, useNavigation, Link, useFocusEffect } from 'expo-router'
+import { doc, setDoc, collection, onSnapshot, query, orderBy, deleteDoc, getDocs } from 'firebase/firestore'
 import * as Notifications from 'expo-notifications'
 import Add from '../../components/Add'
 import Icon from '../../components/Icon'
 import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
-import { db } from '../../config'
+import { db, auth } from '../../config'
 import { type Habit } from '../../../types/habit'
+import subtractYearMonthDay from '../../components/SubtractYearMonthDay'
 
 const handleAdd = (): void => {
   router.push('./addHabit')
 }
 
 const handleDelete = async (habitItemId: string): Promise<void> => {
+  if (auth.currentUser === null) { return }
+
   // habitsコレクションの，指定のID(habitItemId)のドキュメントを参照を取得
-  const refHabitItem = doc(db, 'habits', habitItemId)
+  const refToUsersHabitsItemId = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
   // alarmsコレクションへの参照を取得
-  const refHabitAlarmCollection = collection(refHabitItem, 'alarms')
+  const refHabitAlarmCollection = collection(refToUsersHabitsItemId, 'alarms')
   // alarmsコレクション中のドキュメントをすべて取得
   const refHabitAlarmId = await getDocs(refHabitAlarmCollection)
 
@@ -29,7 +32,7 @@ const handleDelete = async (habitItemId: string): Promise<void> => {
       text: '削除する',
       style: 'destructive',
       onPress: () => {
-        deleteDoc(refHabitItem)
+        deleteDoc(refToUsersHabitsItemId)
           .catch(() => { Alert.alert('削除に失敗しました') })
 
         refHabitAlarmId.forEach((doc) => {
@@ -49,8 +52,40 @@ const handleDelete = async (habitItemId: string): Promise<void> => {
 }
 
 const Home = (): JSX.Element => {
-  const [habitItems, setHabits] = useState<Habit[]>([])
+  const [habitItems, setHabitItems] = useState<Habit[]>([])
   const headerNavigation = useNavigation()
+
+  const date: Date = new Date()
+  const year: number = date.getFullYear()
+  const month: number = date.getMonth() + 1
+  const day: number = date.getDate()
+  const dayOfWeek: number = date.getDay()
+  const latestAccess: {
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+  } = {
+    year,
+    month,
+    day,
+    dayOfWeek
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      if (auth.currentUser === null) { return }
+      const refToUsersLatestAccess = doc(db, `users/${auth.currentUser.uid}`)
+
+      setDoc(refToUsersLatestAccess, { latestAccess })
+        .then(() => {
+          console.log('成功')
+        })
+        .catch((error) => {
+          console.log('エラーメッセージ', error)
+        })
+    }, [])
+  )
 
   useEffect(() => {
     headerNavigation.setOptions({
@@ -59,29 +94,35 @@ const Home = (): JSX.Element => {
   }, [])
 
   useEffect(() => {
-    const refHabits = collection(db, 'habits')
-    const queryHabits = query(refHabits, orderBy('updatedAt', 'desc'))
+    if (auth.currentUser === null) { return }
+
+    const refToUsersHabits = collection(db, `users/${auth.currentUser.uid}/habits`)
+    const queryHabits = query(refToUsersHabits, orderBy('updatedAt', 'desc'))
 
     const unsubscribeHomeScreen = onSnapshot(queryHabits, (snapshot) => {
-      const remoteHabits: Habit[] = [] // habitsに入れる前の一時的な保存
+      const remoteHabitItems: Habit[] = [] // habitsに入れる前の一時的な保存
       snapshot.forEach((docHabits) => {
-        console.log('habits', docHabits.data())
-        const { habitMission, habitMissionDetail, updatedAt } = docHabits.data()
-        remoteHabits.push({
+        const { habitMission, habitMissionDetail, achievements, updatedAt } = docHabits.data()
+        remoteHabitItems.push({
           habitItemId: docHabits.id,
           habitMission,
           habitMissionDetail,
+          achievements,
           updatedAt
         })
       })
-      setHabits(remoteHabits)
+
+      setHabitItems(remoteHabitItems)
     })
     return unsubscribeHomeScreen
   }, [])
 
   return (
     <View style={styles.container}>
+
       { habitItems.map((habitItem) => {
+        subtractYearMonthDay(habitItem, latestAccess)
+
         return (
           <View key={habitItem.habitItemId}>
             <Link href={{ pathname: './editHabit', params: { habitItemId: habitItem.habitItemId } }} asChild>
@@ -98,12 +139,14 @@ const Home = (): JSX.Element => {
                   onPress={() => {
                     handleDelete(habitItem.habitItemId)
                       .then(() => {})
-                      .catch((error: string) => { console.log(error)})
-                  }} >
+                      .catch((error: string) => { console.log(error) })
+                  }}
+                >
                   <Icon iconName='DeleteNotify' iconColor='#D9D9D9' />
                 </TouchableOpacity>
                 </View>
-                <WeeklyCheckButtons />
+
+                <WeeklyCheckButtons habitItem = {habitItem} habitItemId = {habitItem.habitItemId} achievements = {habitItem.achievements}/>
               </TouchableOpacity>
             </Link>
           </View>
@@ -143,6 +186,7 @@ const styles = StyleSheet.create({
     lineHeight: 24
   },
   deleteHabitItemButton: {
+    backgroundColor: '#ffffff',
     position: 'absolute',
     top: 0,
     right: 0

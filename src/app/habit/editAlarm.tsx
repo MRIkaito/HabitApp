@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import * as Notifications from 'expo-notifications'
 import { Timestamp, doc, getDoc, setDoc } from 'firebase/firestore'
 import Save from '../../components/Save'
-import { db } from '../../../src/config'
+import { db, auth } from '../../../src/config'
 import type { AlarmTime, SetAlarmTime, SetRepeatDayOfWeek } from '../../../types/habit'
 
 if (Platform.OS === 'android') {
@@ -127,13 +127,12 @@ const weekdayScheduleNotificationAsync = async (hours: number, minutes: number, 
   return identifier
 }
 
-// 通知のキャンセル処理
-// Notifications.cancelAllScheduledNotificationsAsync()
-
 // Firestoreに保存する
 const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, alarmId: string, habitMission: string): Promise<void> => {
-  const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
-  const refHabitAlarmIdentifier = await getDoc(refHabitAlarm)
+  if (auth.currentUser === null) { return } // currentUserがnullの場合は保存しない
+
+  const refToUsersHabitsAlarms = doc(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`, alarmId)
+  const refHabitAlarmIdentifier = await getDoc(refToUsersHabitsAlarms)
 
   refHabitAlarmIdentifier.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
     if (preAlarmIdentifier === null) {
@@ -145,7 +144,7 @@ const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[],
     }
   })
 
-  await setDoc(refHabitAlarm, {
+  await setDoc(refToUsersHabitsAlarms, {
     alarmTime,
     repeatDayOfWeek,
     updatedAt: Timestamp.fromDate(new Date()),
@@ -175,9 +174,10 @@ const requestPermissionsAsync = async (): Promise<void> => {
 
 const fetchData = async (setAlarmTime: SetAlarmTime, setRepeatDayOfWeek: SetRepeatDayOfWeek, habitItemId: string, alarmId: string): Promise<void> => {
   await new Promise<void>((resolve, reject) => {
-    const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
+    if (auth.currentUser === null) { return }
+    const refUsersHabitsAlarms = doc(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`, alarmId)
 
-    getDoc(refHabitAlarm)
+    getDoc(refUsersHabitsAlarms)
       .then((docHabitsAlarms) => {
         const RemoteRepeatTimer: AlarmTime = docHabitsAlarms?.data()?.alarmTime
         const RemoteRepeatDayOfWeek: boolean[] = docHabitsAlarms?.data()?.repeatDayOfWeek
