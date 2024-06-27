@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import * as Notifications from 'expo-notifications'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import Save from '../../components/Save'
-import { db } from '../../../src/config'
+import { db, auth } from '../../../src/config'
 import type { AlarmTime } from '../../../types/habit'
 
 if (Platform.OS === 'android') {
@@ -135,7 +135,10 @@ const requestPermissionsAsync = async (): Promise<void> => {
 }
 
 const handleSaveAsync = async (alarmTime: AlarmTime, repeatDayOfWeek: boolean[], habitItemId: string, habitMission: string): Promise<void> => {
-  await addDoc(collection(db, `habits/${habitItemId}/alarms`), {
+  if (auth.currentUser === null) { return } // currentUserがnullの場合は保存しない
+
+  const refToUserHabitsAlarms = collection(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`)
+  await addDoc(refToUserHabitsAlarms, {
     alarmTime,
     repeatDayOfWeek,
     updatedAt: Timestamp.fromDate(new Date()),

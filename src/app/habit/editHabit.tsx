@@ -6,12 +6,14 @@ import { doc, getDoc, setDoc, Timestamp, collection, query, orderBy, onSnapshot,
 import HabitWeekLog from '../../components/HabitWeekLog'
 import Icon from '../../components/Icon'
 import Save from '../../components/Save'
-import { db } from '../../config'
+import { db, auth } from '../../config'
 import { type HabitItemAlarm } from '../../../types/habit'
 
 const handleSave = (habitItemId: string, habitMission: string, habitMissionDetail: string): void => {
-  const ref = doc(db, 'habits', habitItemId)
-  setDoc(ref, {
+  if (auth.currentUser === null) { return }
+
+  const refToUsersHabits = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
+  setDoc(refToUsersHabits, {
     habitMission,
     habitMissionDetail,
     updatedAt: Timestamp.fromDate(new Date())
@@ -25,8 +27,10 @@ const handleSave = (habitItemId: string, habitMission: string, habitMissionDetai
 }
 
 const handleDelete = async (habitItemId: string, alarmId: string): Promise<void> => {
-  const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
-  const refHabitAlarmId = await getDoc(refHabitAlarm)
+  if (auth.currentUser === null) { return } // currentUserがnullの場合は保存しない
+
+  const refToUsersHabitsAlarms = doc(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`, alarmId)
+  const refToUsersHabitsAlarmsAlarmId = await getDoc(refToUsersHabitsAlarms)
 
   Alert.alert('削除します', 'よろしいですか？', [
     {
@@ -36,10 +40,10 @@ const handleDelete = async (habitItemId: string, alarmId: string): Promise<void>
       text: '削除する',
       style: 'destructive',
       onPress: () => {
-        deleteDoc(refHabitAlarm)
+        deleteDoc(refToUsersHabitsAlarms)
           .catch(() => { Alert.alert('削除に失敗しました') })
 
-        refHabitAlarmId.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
+        refToUsersHabitsAlarmsAlarmId.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
           if (preAlarmIdentifier === null) {
             // Do Nothing
           } else {
@@ -67,8 +71,10 @@ const EditHabit = (): JSX.Element => {
   }, [habitMission, habitMissionDetail])
 
   useEffect(() => {
-    const refHabitItem = doc(db, 'habits', habitItemId)
-    getDoc(refHabitItem)
+    if (auth.currentUser === null) { return }
+
+    const refToUsersHabits = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
+    getDoc(refToUsersHabits)
       .then((refHabitsItem) => {
         const RemoteHabitMission: string = refHabitsItem?.data()?.habitMission
         const RemoteHabitMissionDetail: string = refHabitsItem?.data()?.habitMissionDetail
@@ -81,14 +87,15 @@ const EditHabit = (): JSX.Element => {
   }, [])
 
   useEffect(() => {
-    const refAlarmItems = collection(db, `habits/${habitItemId}/alarms`)
+    if (auth.currentUser === null) { return }
+
+    const refToUsersHabitsAlarmsItems = collection(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`)
     // ↓昇順にならないバグ発生．後で修正
-    const queryAlarmItems = query(refAlarmItems, orderBy('alarmTime.hours', 'desc'))
+    const queryAlarmItems = query(refToUsersHabitsAlarmsItems, orderBy('alarmTime.hours', 'desc'))
     const unsubscribeEditHabitScreen = onSnapshot(queryAlarmItems, (snapshot) => {
       const remoteAlarmItems: HabitItemAlarm[] = []
 
       snapshot.forEach((docAlarmItems) => {
-        console.log('', docAlarmItems.data())
         const { alarmTime, repeatDayOfWeek, updatedAt } = docAlarmItems.data()
         remoteAlarmItems.push({
           alarmId: docAlarmItems.id,
