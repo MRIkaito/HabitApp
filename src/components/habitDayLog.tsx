@@ -1,16 +1,102 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { doc, setDoc } from 'firebase/firestore'
+import { db, auth } from '../config'
+import { useState } from 'react'
 
-const HabitDayLog = (): JSX.Element => {
-  return (
-    <View style = {styles.habitDayLog}>
-      <View style = {styles.day}>
-        <Text>1</Text>
-      </View>
-      <TouchableOpacity style = {styles.daylog}>
-        <Text>◯</Text>
-      </TouchableOpacity>
-    </View>
+interface Props {
+  dailyAchievement?: {
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }
+  achievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>
+  accessableIndexOfAchievement: number
+  habitItemId: string
+}
+
+const tempSaving = (
+  habitItemId: string,
+  accessibleIndexAchievement: number,
+  achievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>,
+  achievement: boolean,
+  setLocalAchievement: React.Dispatch<React.SetStateAction<boolean>>
+): void => {
+  if (auth.currentUser === null) { return }
+
+  const refToUserHabitsItemId = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
+  const forSetAchievements = [...achievements]
+
+  forSetAchievements[accessibleIndexAchievement].achievement = (!achievement)
+  setLocalAchievement(!achievement)
+
+  setDoc(refToUserHabitsItemId,
+    {
+      achievements: forSetAchievements
+    },
+    { merge: true }
   )
+    .catch((error: string) => { console.log(error) })
+}
+
+const HabitDayLog = (props: Props): JSX.Element => {
+  if ((props.dailyAchievement === undefined)) {
+    // 何も値がない(undefinedの)場合，ひとまず日付をハイフン表示, 黒塗り表示
+    return (
+      <View style = {styles.habitDayLog}>
+        <View style = {styles.noLogDay}>
+          <Text></Text>
+        </View>
+        <View style = {styles.noLog}>
+          <Text></Text>
+        </View>
+      </View>
+    )
+  }
+
+  const { month, day, achievement } = props.dailyAchievement
+  const achievements = props.achievements
+  const accessibleIndexAchievement = props.accessableIndexOfAchievement
+  const habitItemId = props.habitItemId
+
+  const [localAchievement, setLocalAchievement] = useState(achievement)
+
+  if (localAchievement) {
+    return (
+      <View style = {styles.habitDayLog}>
+        <View style = {styles.day}>
+        <Text>{month}/{day}</Text>
+        </View>
+        <TouchableOpacity style = {styles.log} onPress = {() => { tempSaving(habitItemId, accessibleIndexAchievement, achievements, achievement, setLocalAchievement) }}>
+          <Text>◯</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  } else {
+    return (
+      <View style = {styles.habitDayLog}>
+        <View style = {styles.day}>
+        <Text>{month}/{day}</Text>
+        </View>
+        <TouchableOpacity style = {styles.log} onPress = {() => { tempSaving(habitItemId, accessibleIndexAchievement, achievements, achievement, setLocalAchievement) }}>
+          <Text>✗</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 }
 
 const styles = StyleSheet.create({
@@ -26,10 +112,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  daylog: {
+  noLogDay: {
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#969696'
+  },
+  log: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  noLog: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#969696'
   }
 })
 
