@@ -16,7 +16,7 @@ interface Props {
 }
 
 const WeeklyCheckButtons = (props: Props): JSX.Element => {
-  const { habitItem, habitItemId, achievements } = props
+  const { habitItemId, achievements } = props
   if (auth.currentUser === null) {
     console.log('ユーザーログインがされていません')
     return <></>
@@ -39,7 +39,6 @@ const WeeklyCheckButtons = (props: Props): JSX.Element => {
       }
       for (let i = 0; i <= (latestAchievementsDayOfWeek - earliestAchievementsDayOfWeek); i++) {
         secondAchievement.unshift(<DayCheckButton
-          habitItem = {habitItem}
           habitItemId = {habitItemId}
           achievementsIndex = {achievements.length - 1 - i}
           achievementLog = {achievements[achievements.length - 1 - i].achievement}
@@ -60,7 +59,6 @@ const WeeklyCheckButtons = (props: Props): JSX.Element => {
     } else {
       for (let i = 0; i <= latestAchievementsDayOfWeek; i++) {
         firstAchievement.unshift(<DayCheckButton
-          habitItem = {habitItem}
           habitItemId = {habitItemId}
           achievementsIndex = {achievements.length - 1 - i}
           achievementLog = {achievements[achievements.length - 1 - i].achievement}
@@ -80,7 +78,6 @@ const WeeklyCheckButtons = (props: Props): JSX.Element => {
   } else {
     for (let i = 0; i <= latestAchievementsDayOfWeek; i++) {
       firstAchievement.unshift(<DayCheckButton
-        habitItem = {habitItem}
         habitItemId = {habitItemId}
         achievementsIndex = {achievements.length - 1 - i}
         achievementLog = {achievements[achievements.length - 1 - i].achievement}

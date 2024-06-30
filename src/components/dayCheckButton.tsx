@@ -2,10 +2,8 @@ import { Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { doc, setDoc } from 'firebase/firestore'
 import Icon from './Icon'
 import { db, auth } from '../config'
-import { type Habit } from '../../types/habit'
 
 interface Props {
-  habitItem?: Habit
   habitItemId?: string
   achievementsIndex?: number
   achievementLog?: boolean
@@ -18,7 +16,10 @@ interface Props {
   }>
 }
 
-const handlePressTransition = (habitItem: Habit, habitItemId: string, achievementsIndex: number, achievementLog: boolean,
+const handlePressTransition = (
+  habitItemId: string,
+  achievementsIndex: number,
+  achievementLog: boolean,
   achievements: Array<{
     year: number
     month: number
@@ -30,23 +31,22 @@ const handlePressTransition = (habitItem: Habit, habitItemId: string, achievemen
   if (auth.currentUser === null) { return }
   const refToUserHabitsItemId = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
   const remoteAchievements = [...achievements]
-  // その箇所のachievementを反転させる：achievementLogが必要
+
   achievementLog = (!achievementLog)
   remoteAchievements[achievementsIndex].achievement = achievementLog
-  // setDocで格納する：habitItemIdが必要
-  setDoc(refToUserHabitsItemId, {
-    habitMission: habitItem.habitMission,
-    habitMissionDetail: habitItem.habitMissionDetail,
-    achievements: remoteAchievements,
-    updatedAt: habitItem.updatedAt
-  })
+  setDoc(
+    refToUserHabitsItemId,
+    {
+      achievements: remoteAchievements
+    },
+    { merge: true }
+  )
     .catch((error: string) => { console.log(error) })
 }
 
 const DayCheckButton = (props: Props): JSX.Element => {
-  const { habitItem, habitItemId, achievementsIndex, achievementLog, achievements } = props
+  const { habitItemId, achievementsIndex, achievementLog, achievements } = props
   if (
-    (habitItem === undefined) ||
     (habitItemId === undefined) ||
     (achievementsIndex === undefined) ||
     (achievementLog === undefined) ||
@@ -61,7 +61,7 @@ const DayCheckButton = (props: Props): JSX.Element => {
   if (achievementLog) {
     return (
       // スタイリングはまだ直していない．
-      <TouchableOpacity style={styles.undoStatus} onPress={() => { handlePressTransition(habitItem, habitItemId, achievementsIndex, achievementLog, achievements) }}>
+      <TouchableOpacity style={styles.undoStatus} onPress={() => { handlePressTransition(habitItemId, achievementsIndex, achievementLog, achievements) }}>
         <Text>
           ◯
           {/* <Icon iconName='' iconColor='#24FF00' /> */}
@@ -70,7 +70,7 @@ const DayCheckButton = (props: Props): JSX.Element => {
     )
   } else {
     return (
-      <TouchableOpacity style={styles.undoStatus} onPress={() => { handlePressTransition(habitItem, habitItemId, achievementsIndex, achievementLog, achievements) }}>
+      <TouchableOpacity style={styles.undoStatus} onPress={() => { handlePressTransition(habitItemId, achievementsIndex, achievementLog, achievements) }}>
         <Text>✗</Text>
         {/* <Icon iconName='' iconColor='#24FF00' /> */}
       </TouchableOpacity>
