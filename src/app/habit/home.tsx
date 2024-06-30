@@ -3,7 +3,7 @@ import { View, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-nati
 import { router, useNavigation, Link, useFocusEffect } from 'expo-router'
 import { doc, setDoc, collection, onSnapshot, query, orderBy, deleteDoc, getDocs } from 'firebase/firestore'
 import * as Notifications from 'expo-notifications'
-import Add from '../../components/Add'
+import Add from '../../components/add'
 import Icon from '../../components/Icon'
 import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
 import { db, auth } from '../../config'
