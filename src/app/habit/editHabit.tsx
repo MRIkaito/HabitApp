@@ -6,16 +6,22 @@ import { doc, getDoc, setDoc, Timestamp, collection, query, orderBy, onSnapshot,
 import HabitWeekLog from '../../components/HabitWeekLog'
 import Icon from '../../components/Icon'
 import Save from '../../components/Save'
-import { db } from '../../config'
+import { db, auth } from '../../config'
 import { type HabitItemAlarm } from '../../../types/habit'
 
 const handleSave = (habitItemId: string, habitMission: string, habitMissionDetail: string): void => {
-  const ref = doc(db, 'habits', habitItemId)
-  setDoc(ref, {
-    habitMission,
-    habitMissionDetail,
-    updatedAt: Timestamp.fromDate(new Date())
-  })
+  if (auth.currentUser === null) { return }
+
+  const refToUsersHabits = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
+  setDoc(
+    refToUsersHabits,
+    {
+      habitMission,
+      habitMissionDetail,
+      updatedAt: Timestamp.fromDate(new Date())
+    },
+    { merge: true }
+  )
     .then(() => {
       router.back()
     })
@@ -25,8 +31,10 @@ const handleSave = (habitItemId: string, habitMission: string, habitMissionDetai
 }
 
 const handleDelete = async (habitItemId: string, alarmId: string): Promise<void> => {
-  const refHabitAlarm = doc(db, `habits/${habitItemId}/alarms`, alarmId)
-  const refHabitAlarmId = await getDoc(refHabitAlarm)
+  if (auth.currentUser === null) { return } // currentUserがnullの場合は保存しない
+
+  const refToUsersHabitsAlarms = doc(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`, alarmId)
+  const refToUsersHabitsAlarmsAlarmId = await getDoc(refToUsersHabitsAlarms)
 
   Alert.alert('削除します', 'よろしいですか？', [
     {
@@ -36,10 +44,10 @@ const handleDelete = async (habitItemId: string, alarmId: string): Promise<void>
       text: '削除する',
       style: 'destructive',
       onPress: () => {
-        deleteDoc(refHabitAlarm)
+        deleteDoc(refToUsersHabitsAlarms)
           .catch(() => { Alert.alert('削除に失敗しました') })
 
-        refHabitAlarmId.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
+        refToUsersHabitsAlarmsAlarmId.data()?.alarmIdentifier.forEach((preAlarmIdentifier: null | string) => {
           if (preAlarmIdentifier === null) {
             // Do Nothing
           } else {
@@ -57,8 +65,82 @@ const EditHabit = (): JSX.Element => {
   const [alarmItems, setAlarmItems] = useState<HabitItemAlarm[]>([])
   const [habitMission, setHabitMission] = useState('')
   const [habitMissionDetail, setHabitMissionDetail] = useState('')
+  const [achievements, setAchievements] = useState<Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>>([])
   const habitItemId = String(useLocalSearchParams().habitItemId)
   const headerNavigation = useNavigation()
+
+  let j = 0
+  let k = 0
+  const [firstWeekAchievements, setFirstWeekAchievements] = useState<Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>>([])
+  const [secondWeekAchievements, setSecondWeekAchievements] = useState<Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>>([])
+  const [thirdWeekAchievements, setThirdWeekAchievements] = useState<Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>>([])
+  const [fourthWeekAchievements, setFourthWeekAchievements] = useState<Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>>([])
+  const localFirstWeekAchievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }> = []
+  const localSecondWeekAchievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }> = []
+  const localThirdWeekAchievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }> = []
+  const localFourthWeekAchievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }> = []
+  const localIndexOfFirstWeekAchievements: number[] = []
+  const localIndexOfSecondWeekAchievements: number[] = []
+  const localIndexOfThirdWeekAchievements: number[] = []
+  const localIndexOfFourthWeekAchievements: number[] = []
+  const [indexOfFirstWeekAchievements, setIndexOfFirstWeekAchievements] = useState<number[]>([])
+  const [indexOfSecondWeekAchievements, setIndexOfSecondWeekAchievements] = useState<number[]>([])
+  const [indexOfThirdWeekAchievements, setIndexOfThirdWeekAchievements] = useState<number[]>([])
+  const [indexOfFourthWeekAchievements, setIndexOfFourthWeekAchievements] = useState<number[]>([])
 
   useEffect(() => {
     headerNavigation.setOptions({
@@ -67,13 +149,89 @@ const EditHabit = (): JSX.Element => {
   }, [habitMission, habitMissionDetail])
 
   useEffect(() => {
-    const refHabitItem = doc(db, 'habits', habitItemId)
-    getDoc(refHabitItem)
+    if (auth.currentUser === null) { return }
+
+    const refToUsersHabits = doc(db, `users/${auth.currentUser.uid}/habits`, habitItemId)
+    getDoc(refToUsersHabits)
       .then((refHabitsItem) => {
         const RemoteHabitMission: string = refHabitsItem?.data()?.habitMission
         const RemoteHabitMissionDetail: string = refHabitsItem?.data()?.habitMissionDetail
+        const RemoteAchievements: Array<{
+          year: number
+          month: number
+          day: number
+          dayOfWeek: number
+          achievement: boolean
+        }> = refHabitsItem?.data()?.achievements
         setHabitMission(RemoteHabitMission)
         setHabitMissionDetail(RemoteHabitMissionDetail)
+        setAchievements(RemoteAchievements)
+
+        const indexOfRemoteAchve = RemoteAchievements.length
+        for (let i = 1; ((indexOfRemoteAchve - i >= 0) && (RemoteAchievements[indexOfRemoteAchve - i].dayOfWeek !== 6)); i++) {
+          localFirstWeekAchievements.unshift(RemoteAchievements[indexOfRemoteAchve - i])
+          localIndexOfFirstWeekAchievements.unshift(indexOfRemoteAchve - i)
+          j = i
+        }
+        // 最新ログが土曜日始まり
+        if (j === 0) {
+          for (let i = 1; (indexOfRemoteAchve - i >= 0) && (i !== 8); i++) {
+            localFirstWeekAchievements.unshift(RemoteAchievements[indexOfRemoteAchve - i])
+            localIndexOfFirstWeekAchievements.unshift(indexOfRemoteAchve - i)
+            j = i
+          }
+          if (j === 7) {
+            for (let i = 8; (indexOfRemoteAchve - i >= 0) && (i !== 15); i++) {
+              localSecondWeekAchievements.unshift(RemoteAchievements[indexOfRemoteAchve - i])
+              localIndexOfSecondWeekAchievements.unshift(indexOfRemoteAchve - i)
+              j = i
+            }
+          }
+          if (j === 14) {
+            for (let i = 15; (indexOfRemoteAchve - i >= 0) && (i !== 22); i++) {
+              localThirdWeekAchievements.unshift(RemoteAchievements[indexOfRemoteAchve - i])
+              localIndexOfThirdWeekAchievements.unshift(indexOfRemoteAchve - i)
+              j = i
+            }
+          }
+          if (j === 21) {
+            for (let i = 22; (indexOfRemoteAchve - i >= 0) && (i !== 29); i++) {
+              localFourthWeekAchievements.unshift(RemoteAchievements[indexOfRemoteAchve - i])
+              localIndexOfFourthWeekAchievements.unshift(indexOfRemoteAchve - i)
+              j = i
+            }
+          }
+          // 最新ログが土曜日以外 始まり
+        } else {
+          for (let i = 1; ((indexOfRemoteAchve - j) - i >= 0) && (i !== 8); i++) {
+            localSecondWeekAchievements.unshift(RemoteAchievements[(indexOfRemoteAchve - j) - i])
+            localIndexOfSecondWeekAchievements.unshift((indexOfRemoteAchve - j) - i)
+            k = i
+          }
+          if (k === 7) {
+            for (let i = 8; ((indexOfRemoteAchve - j) - i >= 0) && (i !== 15); i++) {
+              localThirdWeekAchievements.unshift(RemoteAchievements[(indexOfRemoteAchve - j) - i])
+              localIndexOfThirdWeekAchievements.unshift((indexOfRemoteAchve - j) - i)
+              k = i
+            }
+          }
+          if (k === 14) {
+            for (let i = 8; ((indexOfRemoteAchve - j) - i >= 0) && (i !== 22); i++) {
+              localFourthWeekAchievements.unshift(RemoteAchievements[(indexOfRemoteAchve - j) - i])
+              localIndexOfFourthWeekAchievements.unshift((indexOfRemoteAchve - j) - i)
+              k = i
+            }
+          }
+        }
+        setFirstWeekAchievements(localFirstWeekAchievements)
+        setSecondWeekAchievements(localSecondWeekAchievements)
+        setThirdWeekAchievements(localThirdWeekAchievements)
+        setFourthWeekAchievements(localFourthWeekAchievements)
+
+        setIndexOfFirstWeekAchievements(localIndexOfFirstWeekAchievements)
+        setIndexOfSecondWeekAchievements(localIndexOfSecondWeekAchievements)
+        setIndexOfThirdWeekAchievements(localIndexOfThirdWeekAchievements)
+        setIndexOfFourthWeekAchievements(localIndexOfFourthWeekAchievements)
       })
       .catch((error) => {
         console.log(error)
@@ -81,14 +239,15 @@ const EditHabit = (): JSX.Element => {
   }, [])
 
   useEffect(() => {
-    const refAlarmItems = collection(db, `habits/${habitItemId}/alarms`)
+    if (auth.currentUser === null) { return }
+
+    const refToUsersHabitsAlarmsItems = collection(db, `users/${auth.currentUser.uid}/habits/${habitItemId}/alarms`)
     // ↓昇順にならないバグ発生．後で修正
-    const queryAlarmItems = query(refAlarmItems, orderBy('alarmTime.hours', 'desc'))
+    const queryAlarmItems = query(refToUsersHabitsAlarmsItems, orderBy('alarmTime.hours', 'desc'))
     const unsubscribeEditHabitScreen = onSnapshot(queryAlarmItems, (snapshot) => {
       const remoteAlarmItems: HabitItemAlarm[] = []
 
       snapshot.forEach((docAlarmItems) => {
-        console.log('', docAlarmItems.data())
         const { alarmTime, repeatDayOfWeek, updatedAt } = docAlarmItems.data()
         remoteAlarmItems.push({
           alarmId: docAlarmItems.id,
@@ -114,10 +273,30 @@ const EditHabit = (): JSX.Element => {
             onChangeText={(habitMission) => { setHabitMission(habitMission) }}
           />
         </View>
-        <HabitWeekLog />
-        <HabitWeekLog />
-        <HabitWeekLog />
-        <HabitWeekLog />
+          <HabitWeekLog
+            weeklyAchievements = {fourthWeekAchievements}
+            indexArray = {indexOfFourthWeekAchievements}
+            achievements = {achievements}
+            habitItemId = { habitItemId }
+          />
+          <HabitWeekLog
+            weeklyAchievements = {thirdWeekAchievements}
+            indexArray = {indexOfThirdWeekAchievements}
+            achievements = {achievements}
+            habitItemId = { habitItemId }
+          />
+          <HabitWeekLog
+            weeklyAchievements = {secondWeekAchievements}
+            indexArray = {indexOfSecondWeekAchievements}
+            achievements = {achievements}
+            habitItemId = { habitItemId }
+          />
+          <HabitWeekLog
+            weeklyAchievements = {firstWeekAchievements}
+            indexArray = {indexOfFirstWeekAchievements}
+            achievements = {achievements}
+            habitItemId = { habitItemId }
+          />
       </View>
 
       <View style={styles.habitMissionDetailSection}>

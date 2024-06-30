@@ -4,6 +4,13 @@ interface Habit {
   habitItemId: string
   habitMission: string
   habitMissionDetail: string
+  achievements: Array<{
+    year: number
+    month: number
+    day: number
+    dayOfWeek: number
+    achievement: boolean
+  }>
   updatedAt: Timestamp
 }
 
