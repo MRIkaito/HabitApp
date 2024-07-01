@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native'
-import HabitDayLog from './HabitDayLog'
+import HabitDayLog from './habitDayLog'
 
 // 関数を渡して，それをDayLogに横流しする
 interface Props {

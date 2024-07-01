@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native'
-import DayCheckButton from './DayCheckButton'
+import DayCheckButton from './dayCheckButton'
 import { auth } from '../config'
 import { type Habit } from '../../types/habit'
 

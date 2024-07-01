@@ -5,7 +5,7 @@ import { doc, setDoc, collection, onSnapshot, query, orderBy, deleteDoc, getDocs
 import * as Notifications from 'expo-notifications'
 import Add from '../../components/add'
 import Icon from '../../components/Icon'
-import WeeklyCheckButtons from '../../components/WeeklyCheckButtons'
+import WeeklyCheckButtons from '../../components/weeklyCheckButtons'
 import { db, auth } from '../../config'
 import { type Habit } from '../../../types/habit'
 import subtractYearMonthDay from '../../components/SubtractYearMonthDay'
