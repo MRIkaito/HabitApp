@@ -3,7 +3,7 @@ import { Text, View, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView 
 import { Link, router, useNavigation, useLocalSearchParams } from 'expo-router'
 import * as Notifications from 'expo-notifications'
 import { doc, getDoc, setDoc, Timestamp, collection, query, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore'
-import HabitWeekLog from '../../components/HabitWeekLog'
+import HabitWeekLog from '../../components/habitWeekLog'
 import Icon from '../../components/Icon'
 import Save from '../../components/Save'
 import { db, auth } from '../../config'

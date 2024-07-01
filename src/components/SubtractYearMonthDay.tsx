@@ -22,7 +22,7 @@ const subtractYearMonthDay = (habitItem: Habit, latestAccess: {
   // ①開始：同じ年に揃えるための処理 //
   while (remoteAchievements[remoteAchievements.length - 1].year !== latestAccess.year) {
     switch (remoteAchievements[remoteAchievements.length - 1].month) {
-      case 1 | 3 | 5 | 7 | 8 | 10 :
+      case 1: case 3: case 5: case 7: case 8: case 10:
         if (remoteAchievements[remoteAchievements.length - 1].day === 31) {
           remoteAchievements.push({
             year: remoteAchievements[remoteAchievements.length - 1].year,
@@ -41,7 +41,7 @@ const subtractYearMonthDay = (habitItem: Habit, latestAccess: {
           })
         }
         break
-      case 4 | 6 | 9 | 11:
+      case 4: case 6: case 9: case 11:
         if (remoteAchievements[remoteAchievements.length - 1].day === 30) {
           remoteAchievements.push({
             year: remoteAchievements[remoteAchievements.length - 1].year,
@@ -129,7 +129,7 @@ const subtractYearMonthDay = (habitItem: Habit, latestAccess: {
   // ②開始：同じ月に揃えるための処理 //
   while (remoteAchievements[remoteAchievements.length - 1].month !== latestAccess.month) {
     switch (remoteAchievements[remoteAchievements.length - 1].month) {
-      case 1 | 3 | 5 | 7 | 8 | 10 | 12:
+      case 1: case 3: case 5: case 7: case 8: case 10: case 12:
         if (remoteAchievements[remoteAchievements.length - 1].day === 31) {
           remoteAchievements.push({
             year: latestAccess.year,
@@ -148,7 +148,7 @@ const subtractYearMonthDay = (habitItem: Habit, latestAccess: {
           })
         }
         break
-      case 4 | 6 | 9 | 11:
+      case 4: case 6: case 9: case 11:
         if (remoteAchievements[remoteAchievements.length - 1].day === 30) {
           remoteAchievements.push({
             year: latestAccess.year,
@@ -210,6 +210,7 @@ const subtractYearMonthDay = (habitItem: Habit, latestAccess: {
         break
       default:
         console.log('エラーが発生しました')
+        break
     }
   }
   // ②終了：同じ月に揃えるための処理 //
